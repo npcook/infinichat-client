@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="Client.UI.NewTabControl"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+			 mc:Ignorable="d" 
+			 d:DesignHeight="300" d:DesignWidth="300">
+
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Blue.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseLight.xaml" />
+			</ResourceDictionary.MergedDictionaries>
+			<Style TargetType="ContextMenu"/>
+			<Style TargetType="MenuItem"/>
+		</ResourceDictionary>
+	</UserControl.Resources>
+	<Grid>
+		<DockPanel Background="{StaticResource BackgroundBrush}" Margin="0">
+			<TreeView x:Name="FriendTreeView" Width="200" FontSize="12pt" Background="Transparent" BorderThickness="0" DockPanel.Dock="Left" SelectedItemChanged="FriendTreeViewSelectedItemChanged"/>
+			<DockPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" DockPanel.Dock="Bottom">
+				<TextBox x:Name="AddFriendTextBox" Width="200" Margin="0,0,5,0" DockPanel.Dock="Left"/>
+				<Button x:Name="AddFriendButton" Content="Add" Width="70" Click="AddFriendButtonClick" DockPanel.Dock="Right"/>
+			</DockPanel>
+		</DockPanel>
+	</Grid>
+</UserControl>
