@@ -20,7 +20,7 @@
 		<CheckBox x:Name="BoldCheckBox" Content="Bold" HorizontalAlignment="Left" Margin="177,10,0,0" VerticalAlignment="Top" Width="139" TabIndex="20"/>
 		<CheckBox x:Name="ItalicCheckBox" Content="Italic" HorizontalAlignment="Left" Margin="177,32,0,0" VerticalAlignment="Top" Width="139" TabIndex="30"/>
 		<CheckBox x:Name="UnderlineCheckBox" Content="Underline" HorizontalAlignment="Left" Margin="177,54,0,0" VerticalAlignment="Top" Width="139" TabIndex="40"/>
-		<TextBlock x:Name="SampleTextBlock" FontFamily="{Binding Path=SelectedItem.Content,ElementName=FontFamilyListBox}" FontSize="{Binding Path=SelectedItem.Content,ElementName=SizeComboBox}" Foreground="{Binding Path=Foreground,ElementName=ColorComboBox}" Background="White" Height="55" Margin="10,173,0,0" TextWrapping="Wrap" HorizontalAlignment="Left" VerticalAlignment="Top" TextAlignment="Center" Width="306">
+		<TextBlock x:Name="SampleTextBlock" FontFamily="{Binding Path=SelectedItem.Content,ElementName=FontFamilyListBox}" FontSize="{Binding Path=SelectedItem.Content,ElementName=SizeComboBox}" Foreground="{Binding Path=SelectedItem.Foreground,ElementName=ColorComboBox}" Background="White" Height="55" Margin="10,173,0,0" TextWrapping="Wrap" HorizontalAlignment="Left" VerticalAlignment="Top" TextAlignment="Center" Width="306">
 			<Run>Sample</Run>
 			<LineBreak/>
 			<Run>Aa Bb Cc Xx Yy Zz</Run>

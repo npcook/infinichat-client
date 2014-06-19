@@ -15,13 +15,22 @@
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="FontFamily" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">Segoe UI</Value>
     </Setting>
     <Setting Name="FontColor" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">#000000</Value>
     </Setting>
-    <Setting Name="FontStyle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="FontBold" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="FontItalic" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="FontUnderline" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="FontSize" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">12</Value>
     </Setting>
   </Settings>
 </SettingsFile>

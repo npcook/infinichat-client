@@ -73,7 +73,7 @@ namespace Client.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Segoe UI")]
         public string FontFamily {
             get {
                 return ((string)(this["FontFamily"]));
@@ -85,7 +85,7 @@ namespace Client.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("#000000")]
         public string FontColor {
             get {
                 return ((string)(this["FontColor"]));
@@ -97,13 +97,49 @@ namespace Client.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string FontStyle {
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FontBold {
             get {
-                return ((string)(this["FontStyle"]));
+                return ((bool)(this["FontBold"]));
             }
             set {
-                this["FontStyle"] = value;
+                this["FontBold"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FontItalic {
+            get {
+                return ((bool)(this["FontItalic"]));
+            }
+            set {
+                this["FontItalic"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FontUnderline {
+            get {
+                return ((bool)(this["FontUnderline"]));
+            }
+            set {
+                this["FontUnderline"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("12")]
+        public int FontSize {
+            get {
+                return ((int)(this["FontSize"]));
+            }
+            set {
+                this["FontSize"] = value;
             }
         }
     }

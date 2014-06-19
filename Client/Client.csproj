@@ -49,6 +49,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\MahApps.Metro.0.13.1.0\lib\net45\System.Windows.Interactivity.dll</HintPath>
     </Reference>
@@ -70,11 +72,18 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="Protocol\ClientHandler.cs" />
+    <Compile Include="Protocol\ChatClient.cs" />
+    <Compile Include="Protocol\ClientTypes.cs" />
+    <Compile Include="UI\BaseViewModel.cs" />
     <Compile Include="UI\ChatControl.xaml.cs">
       <DependentUpon>ChatControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\ContactViewModel.cs" />
     <Compile Include="UI\ChatTabItem.cs" />
+    <Compile Include="UI\ChatView.xaml.cs">
+      <DependentUpon>ChatView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ChatViewModel.cs" />
     <Compile Include="UI\FontDialog.xaml.cs">
       <DependentUpon>FontDialog.xaml</DependentUpon>
     </Compile>
@@ -84,12 +93,21 @@
     <Compile Include="UI\NewTabControl.xaml.cs">
       <DependentUpon>NewTabControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\NewTabViewModel.cs" />
+    <Compile Include="UI\NewTabView.xaml.cs">
+      <DependentUpon>NewTabView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RelayCommand.cs" />
     <Compile Include="UserStateDetector.cs" />
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
     <Page Include="UI\ChatControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\ChatView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -121,6 +139,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="UI\NewTabControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\NewTabView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

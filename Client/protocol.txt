@@ -1,0 +1,317 @@
+﻿[RESULT] - Result Codes
+----------------
+Good shit:
+200 - OK
+201 - Created
+202 - Accepted
+204 - No Content
+205 - Reset Content
+206 - Partial Content
+
+Client had a bad day:
+400 - Bad Request (Bad syntax)
+401 - Unauthorized (Not logged in)
+403 - Forbidden (Not allowed to access)
+404 - Not Found
+
+Server got pooped on:
+500 - Internal Server Error
+501 - Not Implemented (Yet)
+503 - Service Unavailable (For now)
+505 - Version Not Supported
+
+
+[USER] - User information
+----------------
+- username:        Username
+- display_name:    Display name
+- status:          [STATUS]
+- friend:          Is this user a friend? <true/false/null>
+
+
+[ME] - Logged-In-Client Information
+----------------
+- username:        Username
+- display_name:    Display name
+- status:          [STATUS]
+
+
+[GROUP] - Group information
+----------------
+- groupname:       Group name
+- display_name:    Display name
+- members:         Array of usernames who are members of the group
+- member:          Is the logged in user a member? <true/false/null>
+
+
+[STATUS] - User Online Status
+----------------
+Default statuses:
+Available, Away, Busy, Offline
+
+
+MESSAGES
+Client -> Server
+----------------
+All Messages
+- message:         Name of the message being sent
+- tag:             Unique identifier for the message to match with
+                   the reply.  NEVER starts with an underscore.
+
+login - Log in to the server
+Reply: login
+Parameters:
+- username:        Username to log in with
+- password:        Password hashed with SHA256 to log in with
+- initial_status:  [STATUS] upon login
+Example:
+{
+	"message": "login",
+	"username": "afff",
+	"password": "hashed aff",
+	"initial_status": "Online",
+	"tag": "0"
+}
+
+logout - Log out of the server
+Reply: None
+Parameters:
+- reason:			Reason for logout
+Example:
+{
+	"message": "logout",
+	"reason": "Fuck this server"
+}
+
+chat.user - Chat to a user
+Reply: default
+Parameters:
+- to:               Username to send to
+- font:             [FONT]
+- body:             base64 encoded chat message
+- timestamp:        ISO8601 formatted date and time in UTC, YYYY-MM-DDThh:mm:ss.mmmZ
+                    May 6th, 2014, 8:13:59 PM at 128 milliseconds UTC -> 2014-06-16T20:13:59.128Z
+Example:
+{
+	"message": "chat.user",
+	"to": "afff",
+	"font":
+	{
+		"family": "Segoe UI",
+		"color": "#000000",
+		"style": "bi"
+	},
+	"body": "3kflvnfo0dl==",
+	"timestamp": "2014-06-16T20:13:59.128Z",
+	"tag": "0"
+}
+
+chat.group - Chat to a group
+Reply: default
+Parameters:
+- to:               Groupname to send to
+- font:             [FONT]
+- body:             base64 encoded chat message
+- timestamp:        ISO8601 formatted date and time in UTC, YYYY-MM-DDThh:mm:ss.mmmZ
+                    May 6th, 2014, 8:13:59 PM at 128 milliseconds UTC -> 2014-06-16T20:13:59.128Z
+Example:
+{
+	"message": "chat.user",
+	"to": "groupafff",
+	"font":
+	{
+		"family": "Segoe UI",
+		"color": "#000000",
+		"style": "bi"
+	},
+	"body": "3kflvnfo0dl==",
+	"timestamp": "2014-06-16T20:13:59.128Z",
+	"tag": "0"
+}
+
+list.friends - Gets a list of the logged in user's friends
+Reply: detail.users
+Parameters: None
+Example:
+{
+	"message": "list.friends"
+}
+
+list.groups - Gets a list of the logged in user's groups
+Reply: detail.groups
+Parameters: None
+Example:
+{
+	"message": "list.groups"
+}
+
+detail.users - Get details about users
+Reply: default
+Parameters:
+- usernames:        Array of usernames to get details for
+Example:
+{
+	"message": "detail.users",
+	"usernames": ["afff", "afff2"]
+}
+
+detail.groups - Get details about groups
+Reply: default
+Parameters:
+- groupnames:       Array of groupnames to get details for
+Example:
+{
+	"message": "detail.groups",
+	"groupnames": ["groupaff", "groupaff2"]
+}
+
+me.name - Sets client display name
+Reply: default
+Parameters:
+- display_name      New display name for the client
+Example:
+{
+	"message": "me.name",
+	"display_name": "C0CAFF"
+}
+
+me.status - Sets client status
+Reply: default
+Parameters:
+- status:           [STATUS]
+Example:
+{
+	"message": "me.status",
+	"status": "Away",
+}
+
+
+MESSAGES
+Server -> Client
+---------------
+All Messages
+- message:         Name of the message being sent
+- tag:             Unique identifier for the message to match with
+                   the reply.  ALWAYS starts with an underscore.
+
+detail.users - Sends details about users
+Reply: None
+Parameters:
+- users:            Array of [USER]s
+Example:
+{
+	"message": "detail.users",
+	"users": [
+		{
+			"username": "affff",
+			"display_name": "C0CAFF",
+			"status": "Away",
+			"friend": true
+		}, 
+		{
+			"username": "affff2",
+			"display_name": "Tyr0nE",
+			"status": "Busy",
+			"friend": false
+		}
+	]
+}
+
+detail.groups - Sends details about groups
+Reply: None
+Parameters:
+- groups:           Array of [GROUP]s
+Example:
+{
+	"message": "detail.groups",
+	"groups": [
+		{
+			"groupname": "groupafff",
+			"display_name": "PERU #1 :D!!",
+			"members": ["affff", "affff2"],
+			"member": true
+		}
+	]
+}
+
+chat.user - Notifies of a direct chat message
+Reply: None
+Parameters:
+- from:             Username of sender
+- font:             [FONT]
+- body:             base64 encoded chat message
+- timestamp:        ISO8601 formatted date and time in UTC, YYYY-MM-DDThh:mm:ss.mmmZ
+                    May 6th, 2014, 8:13:59 PM at 128 milliseconds UTC -> 2014-06-16T20:13:59.128Z
+Example:
+{
+	"message": "chat.user",
+	"from": "afff2",
+	"font":
+	{
+		"family": "Segoe UI",
+		"color": "#000000",
+		"style": "bi"
+	},
+	"body": "nfkslacvno39fj2p3=",
+	"timestamp": "2014-06-16T20:13:59.128Z"
+}
+
+chat.group - Notifies of a chat message through a group
+Reply: None
+Parameters:
+- from:             Username of sender
+- via:              Group name of group being sent through
+- font:             [FONT]
+- body:             bas64 encoded chat message
+- timestamp:        ISO8601 formatted date and time in UTC, YYYY-MM-DDThh:mm:ss.mmmZ
+                    May 6th, 2014, 8:13:59 PM at 128 milliseconds UTC -> 2014-06-16T20:13:59.128Z
+Example:
+{
+	"message": "chat.group",
+	"from": "afff2",
+	"via": "groupafff",
+	"font":
+	{
+		"family": "Segoe UI",
+		"color": "#000000",
+		"style": "bi"
+	},
+	"body": "nfkslacvno39fj2p3=",
+	"timestamp": "2014-06-16T20:13:59.128Z"
+}
+
+
+REPLIES
+One -> Another
+---------------
+All Replies
+- reply:            Name of the reply being sent
+- result:           [RESULT]
+- result_message:   Message pertaining to [RESULT]
+- tag:              The same tag as the message being replied to
+
+default - Default response to a message
+Parameters: None
+Example:
+{
+	"reply": "chat",
+	"result": 200,
+	"result_message": "Success",
+}
+
+login
+Parameters:
+- me:               [ME] for the user logging in
+Example:
+{
+	"reply": "login",
+	"result": 200,
+	"result_message": "Success",
+	"me":
+	{
+		"username": "afff",
+		"display_name": "AFFF",
+		"status": "Online"
+	},
+	"tag": "0"
+}

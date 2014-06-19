@@ -97,6 +97,13 @@ namespace Client.UI
 			foreach (int size in sizes)
 				SizeComboBox.Items.Add(new ComboBoxItem() { Content = size.ToString() });
 			SizeComboBox.SelectedIndex = 5;
+
+			if (currentFont.Style.HasFlag(Protocol.FontStyle.Bold))
+				BoldCheckBox.IsChecked = true;
+			if (currentFont.Style.HasFlag(Protocol.FontStyle.Italic))
+				ItalicCheckBox.IsChecked = true;
+			if (currentFont.Style.HasFlag(Protocol.FontStyle.Underline))
+				UnderlineCheckBox.IsChecked = true;
 		}
 
 		private void OKButtonClick(object sender, RoutedEventArgs e)
