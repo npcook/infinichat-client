@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Client.UI
+namespace Client.UI.View
 {
 	/// <summary>
 	/// Interaction logic for ChatView.xaml
 	/// </summary>
 	public partial class ChatView : UserControl
 	{
-		public static readonly RoutedUICommand ChatInputEnter = new RoutedUICommand("ChatInputEnter", "ChatInputEnter", typeof(ChatControl));
+		public static readonly RoutedUICommand ChatInputEnter = new RoutedUICommand("ChatInputEnter", "ChatInputEnter", typeof(ChatView));
 
 		public ChatView()
 		{
@@ -28,12 +28,24 @@ namespace Client.UI
 
 			DataContextChanged += (sender, e) =>
 				{
-					var vm = DataContext as ChatViewModel;
+					var vm = DataContext as ViewModel.ChatViewModel;
 					if (vm.IsGroup)
 						GroupMembersListBox.Visibility = System.Windows.Visibility.Visible;
 					else
 						StatusLabel.Visibility = System.Windows.Visibility.Visible;
 				};
+		}
+
+		protected override void OnVisualParentChanged(DependencyObject oldParent)
+		{
+			if (oldParent != null)
+			{
+				ChatHistory.Document = null;
+			}
+			else
+				ChatHistory.Document = (DataContext as ViewModel.ChatViewModel).ChatHistory;
+
+			base.OnVisualParentChanged(oldParent);
 		}
 
 		private void ChatHistoryTextChanged(object sender, TextChangedEventArgs e)
@@ -57,7 +69,7 @@ namespace Client.UI
 			if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
 				return;
 
-			var vm = DataContext as ChatViewModel;
+			var vm = DataContext as ViewModel.ChatViewModel;
 			if (vm.SendChatCommand.CanExecute(ChatInput.Text))
 			{
 				vm.SendChatCommand.Execute(ChatInput.Text);

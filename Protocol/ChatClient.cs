@@ -34,7 +34,7 @@ namespace Client.Protocol
 
 		private bool disposed = false;
 
-		public User Me
+		public IUser Me
 		{ get; private set; }
 
 		public event EventHandler<UserDetailsEventArgs> UserDetailsChange;
@@ -72,39 +72,31 @@ namespace Client.Protocol
 						{
 							// Convert the JSON object into a User
 							var description = rawUser.ToObject<UserDescription>();
-
-							User user = DescribeUser(description);
-							var username = user.Name;
-
+							var username = description.Name;
+							
 							// Set the change type based on whether or not we've seen the user before
-							if (userCache.ContainsKey(username))
+							User user;
+							if (userCache.TryGetValue(username, out user))
+							{
+								user.Update(description);
 								changedUsers.Add(user);
+							}
 							else
+							{
+								user = new User(this, description);
+								userCache[username] = user;
 								addedUsers.Add(user);
+							}
 
 							// Add or remove the user from our friends list
 							if (user.Relation == UserRelation.Friend)
 								friends[username] = user;
 							else if (friends.ContainsKey(username))
 								friends.Remove(username);
-
-							userCache[username] = user;
-						}
-
-						// TODO: Don't recreate all groups when a user changes, only groups the user was in
-						groups.Clear();
-						List<Group> changedGroups = new List<Group>();
-						foreach (var description in groupDescriptions.Values)
-						{
-							var group = DescribeGroup(description);
-							groups.Add(group.Name, group);
-							changedGroups.Add(group);
 						}
 
 						if (UserDetailsChange != null)
 							UserDetailsChange(this, new UserDetailsEventArgs(addedUsers, changedUsers));
-						if (GroupDetailsChange != null)
-							GroupDetailsChange(this, new GroupDetailsEventArgs(Enumerable.Empty<Group>(), changedGroups));
 					}
 					break;
 
@@ -114,14 +106,22 @@ namespace Client.Protocol
 						List<Group> changedGroups = new List<Group>();
 						foreach (var rawGroup in e.Message["groups"])
 						{
-							var group = DescribeGroup(rawGroup.ToObject<GroupDescription>());
+							var description = rawGroup.ToObject<GroupDescription>();
+							var groupname = description.Name;
 
-							if (groups.ContainsKey(group.Name))
+							Group group;
+							if (groups.TryGetValue(groupname, out group))
+							{
+								group.Update(description);
 								changedGroups.Add(group);
+							}
 							else
+							{
+								group = new Group(this, description);
+								groups[groupname] = group;
 								addedGroups.Add(group);
 
-							groups[group.Name] = group;
+							}
 						}
 						if (GroupDetailsChange != null)
 							GroupDetailsChange(this, new GroupDetailsEventArgs(addedGroups, changedGroups));
@@ -131,7 +131,7 @@ namespace Client.Protocol
 				case "chat.user":
 					{
 						var username = Convert.ToString(e.Message["from"]);
-						User user = GetUser(username);
+						var user = GetUser(username);
 
 						var args = new UserChatEventArgs(
 							user,
@@ -147,7 +147,7 @@ namespace Client.Protocol
 				case "chat.group":
 					{
 						var username = Convert.ToString(e.Message["from"]);
-						User user = GetUser(username);
+						var user = GetUser(username);
 						var groupname = Convert.ToString(e.Message["via"]);
 						Group group;
 						if (!groups.TryGetValue(groupname, out group))
@@ -187,7 +187,7 @@ namespace Client.Protocol
 
 			protocol.SendMessage(message, (messageName, result, reply) =>
 				{
-					Me = DescribeUser(reply["me"].ToObject<UserDescription>());
+					Me = new User(this, reply["me"].ToObject<UserDescription>());
 
 					callback(this, new LoginEventArgs(Convert.ToInt32(reply["result"]), Convert.ToString(reply["result_message"]), Me));
 				});
@@ -261,12 +261,12 @@ namespace Client.Protocol
 			protocol.SendMessage(message, null);
 		}
 
-		public void ChatUser(string username, FontOptions font, string chatMessage)
+		public void ChatUser(string username, FontOptions font, string chatMessage, DateTime timestamp)
 		{
 			Chat("user", username, font, chatMessage);
 		}
 
-		public void ChatGroup(string groupname, FontOptions font, string chatMessage)
+		public void ChatGroup(string groupname, FontOptions font, string chatMessage, DateTime timestamp)
 		{
 			Chat("group", groupname, font, chatMessage);
 		}
@@ -279,12 +279,16 @@ namespace Client.Protocol
 			protocol.SendMessage(message, null);
 		}
 
-		public void ChangeStatus(UserStatus status)
+		public void ChangeStatus(UserStatus status, EventHandler<ReplyEventArgs> callback)
 		{
 			var message = protocol.CreateMessage("me.status");
 			message["status"] = status.ToString();
 
-			protocol.SendMessage(message, null);
+			protocol.SendMessage(message, (messageName, result, reply) =>
+				{
+					if (callback != null)
+						callback(this, new ReplyEventArgs(Convert.ToInt32(reply["result"]), Convert.ToString(reply["result_message"])));
+				});
 		}
 
 		public void Dispose()
@@ -305,38 +309,16 @@ namespace Client.Protocol
 			}
 		}
 
-		private User DescribeUser(UserDescription description)
-		{
-			UserRelation relation = UserRelation.None;
-			if (description.Friend ?? false)
-				relation = UserRelation.Friend;
-			else if (Me != null && Me.Name == description.Name)
-				relation = UserRelation.Me;
-
-			var memberGroups = from _group in groupDescriptions.Values
-							   where _group.MemberNames.FirstOrDefault(memberName => memberName == description.Name) != null
-							   select _group;
-
-			return new User(description.Name, description.DisplayName, description.Status, relation);
-		}
-
-		private User GetUser(string username)
+		public IUser GetUser(string username)
 		{
 			User user;
 			if (!userCache.TryGetValue(username, out user))
 			{
-				user = new GhostUser(username);
+				user = User.CreateGhost(this, username);
 				userCache.Add(username, user);
 			}
 
 			return user;
-		}
-
-		private Group DescribeGroup(GroupDescription description)
-		{
-			var members = from name in description.MemberNames select GetUser(name);
-
-			return new Group(description.Name, description.DisplayName, members, description.Member ?? false);
 		}
 
 		private FontOptions ParseFont(JToken rawFont)

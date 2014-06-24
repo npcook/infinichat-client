@@ -1,21 +1,12 @@
-﻿using System;
+﻿using MahApps.Metro.Controls;
+using MahApps.Metro.Controls.Dialogs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.IO;
 using System.Net.Sockets;
 using System.Threading;
-
-using MahApps.Metro.Controls;
-using Newtonsoft.Json.Linq;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace Client.UI
 {
@@ -25,7 +16,7 @@ namespace Client.UI
 	public partial class LoginDialog : MetroWindow
 	{
 		private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-		private Protocol.ChatClient clientHandler;
+		private Protocol.ChatClient client;
 
 		public LoginDialog()
 		{
@@ -41,64 +32,104 @@ namespace Client.UI
 		{
 			InitializeComponent();
 
-			string username = Properties.Settings.Default.Username;
-			string passwordHash = Properties.Settings.Default.Password;
-			string server = Properties.Settings.Default.Server;
+			var settings = Properties.Settings.Default;
+			string username = settings.Username;
+			string password = settings.Password;
+			string serverName = settings.Server;
 
 			if (username != "")
 			{
 				UsernameTextBox.Text = username;
+				RememberUsernameCheckBox.IsChecked = true;
 				PasswordTextBox.Focus();
 			}
 			else
 				UsernameTextBox.Focus();
 
-			ServerComboBox.Text = server;
+			var matchingServer = from ComboBoxItem serverItem in ServerComboBox.Items where serverItem.Tag as string == serverName select serverItem;
 
-			if (isFirstRun && passwordHash != "")
+			ServerComboBox.Text = serverName;
+			foreach (var server in matchingServer)
+				ServerComboBox.SelectedItem = server;
+
+			if (isFirstRun && password != "")
 			{
 				Hide();
+
+				PasswordTextBox.Password = password;
+				TryLogIn();
 			}
 		}
 
 		private void LoginButtonClick(object sender, RoutedEventArgs e)
 		{
-			IsEnabled = false;
+			TryLogIn();
+		}
+
+		private void TryLogIn()
+		{
+			MainGrid.IsEnabled = false;
 
 			string username = UsernameTextBox.Text;
 			string password = PasswordTextBox.Password;
-			string server = ServerComboBox.Text;
+			string server;
+			if (ServerComboBox.SelectedItem == null)
+				server = ServerComboBox.Text;
+			else
+				server = (ServerComboBox.SelectedItem as ComboBoxItem).Tag as string;
 
 			new Thread(() =>
+			{
+				try
 				{
 					var netClient = new TcpClient(server, 49520);
-					clientHandler = new Protocol.ChatClient();
-					clientHandler.Connect(netClient.GetStream());
-					clientHandler.LogIn(username, password, OnLoginReply);
-				}).Start();
+					client = new Protocol.ChatClient();
+					client.Connect(netClient.GetStream());
+					client.LogIn(username, password, OnLoginReply);
+				}
+				catch (SocketException ex)
+				{
+					Dispatcher.Invoke(() =>
+					{
+						MainGrid.IsEnabled = true;
+
+						MessageBox.Show("Could not log in.", ex.Message);
+					});
+				}
+			}).Start();
 		}
 
 		private void OnLoginReply(object sender, Protocol.LoginEventArgs e)
 		{
 			if (e.Success)
 			{
-				try
-				{
-					Dispatcher.Invoke(new Action(() =>
-						{
-							App.Current.MainWindow = new MainWindow(clientHandler);
-							App.Current.MainWindow.Show();
-							Close();
-						}));
-				}
-				catch (Exception)
-				{
-					System.Diagnostics.Debugger.Break();
-				}
+				Dispatcher.Invoke(new Action(() =>
+					{
+						var settings = Properties.Settings.Default;
+						if (RememberUsernameCheckBox.IsChecked ?? false)
+							settings.Username = UsernameTextBox.Text;
+
+						if (ServerComboBox.SelectedItem == null)
+							settings.Server = ServerComboBox.Text;
+						else
+							settings.Server = (ServerComboBox.SelectedItem as ComboBoxItem).Tag as string;
+
+						if (AutoLoginCheckBox.IsChecked ?? false)
+							settings.Password = PasswordTextBox.Password;
+
+						settings.Save();
+
+						App.Current.MainWindow = new View.MainWindowView();
+						App.Current.MainWindow.DataContext = new ViewModel.MainWindowViewModel(client);
+						App.Current.MainWindow.Show();
+//						App.Current.MainWindow = new MainWindow(client);
+//						App.Current.MainWindow.Show();
+						Close();
+					}));
 			}
 			else
 			{
-				Dispatcher.Invoke(() => { IsEnabled = true; });
+				Dispatcher.Invoke(() => { MainGrid.IsEnabled = true; });
 			}
 		}
 

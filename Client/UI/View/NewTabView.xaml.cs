@@ -13,8 +13,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Client.Protocol;
+using Client.UI.ViewModel;
 
-namespace Client.UI
+namespace Client.UI.View
 {
 	public class ListViewTemplateSelector : DataTemplateSelector
 	{
@@ -50,11 +51,11 @@ namespace Client.UI
 				var _1 = (__1 as ContactViewModel).Contact;
 				var _2 = (__2 as ContactViewModel).Contact;
 
-				if (_1 is Group && _2 is Group)
+				if (_1 is IGroup && _2 is IGroup)
 					return String.Compare(_1.DisplayName, _2.DisplayName);
-				else if (_1 is Group)
+				else if (_1 is IGroup)
 					return 1;
-				else if (_2 is Group)
+				else if (_2 is IGroup)
 					return -1;
 				else
 					return String.Compare(_1.DisplayName, _2.DisplayName);
@@ -67,11 +68,9 @@ namespace Client.UI
 
 			DataContextChanged += (sender, e) =>
 			{
-				var vm = DataContext as NewTabViewModel;
-				var view = new ListCollectionView(vm.Contacts);
-				view.CustomSort = new ContactComparer();
+				// TODO: Move to ViewModel
 
-				FriendListBox.ItemsSource = view;
+				(DataContext as NewTabViewModel).ContactsView.CustomSort = new ContactComparer();
 			};
 		}
 
@@ -79,15 +78,14 @@ namespace Client.UI
 		{
 		}
 
-		private void FriendListItemDoubleClick(object sender, MouseButtonEventArgs e)
+		private void FriendListBoxDoubleClick(object sender, MouseButtonEventArgs e)
 		{
 			var vm = DataContext as NewTabViewModel;
-			vm.StartChatCommand.Execute((sender as ListBoxItem).Tag as ContactViewModel);
+			vm.StartChatCommand.Execute(null);
 		}
 
 		private void FriendListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			e.Handled = true;
 		}
 	}
 }

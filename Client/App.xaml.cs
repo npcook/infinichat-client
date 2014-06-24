@@ -23,6 +23,7 @@ namespace Client
 
 		private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 		private static readonly Dictionary<UserStatus, SolidColorBrush> statusBrushMap = new Dictionary<UserStatus, SolidColorBrush>();
+		private static readonly Dictionary<Color, SolidColorBrush> brushCache = new Dictionary<Color, SolidColorBrush>();
 
 		public new static App Current
 		{ get { return Application.Current as App; } }
@@ -100,6 +101,20 @@ namespace Client
 		public static SolidColorBrush GetUserStatusBrush(UserStatus category)
 		{
 			return statusBrushMap[category];
+		}
+
+		public static SolidColorBrush GetBrush(Color color)
+		{
+			SolidColorBrush brush;
+			if (!brushCache.TryGetValue(color, out brush))
+			{
+				brush = new SolidColorBrush(color);
+				brush.Freeze();
+
+				brushCache[color] = brush;
+			}
+
+			return brush;
 		}
 	}
 }

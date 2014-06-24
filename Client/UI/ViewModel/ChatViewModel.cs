@@ -1,21 +1,16 @@
 ﻿using Client.Protocol;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Client.UI
+namespace Client.UI.ViewModel
 {
-	class ChatViewModel : BaseViewModel
+	public class ChatViewModel : BaseViewModel
 	{
 		private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
-		public static readonly RoutedUICommand ChatInputEnter = new RoutedUICommand("ChatInputEnter", "ChatInputEnter", typeof(ChatControl));
 
 		// TODO: Pruning of the dictionary isn't implemented, so it will keep growing
 		private static readonly Dictionary<Color, SolidColorBrush> chatBrushCache = new Dictionary<Color, SolidColorBrush>();
@@ -48,9 +43,6 @@ namespace Client.UI
 		public TextDecorationCollection TextDecorations
 		{ get; private set; }
 
-		public event EventHandler<SendChatEventArgs> ChatSent;
-		public event EventHandler<ChatEventArgs> ChatReceived;
-
 		public ICommand SendChatCommand
 		{
 			get
@@ -58,10 +50,10 @@ namespace Client.UI
 				return new RelayCommand(
 					text =>
 					{
-						if (Contact.Contact is User)
-							client.ChatUser(Contact.Name, font, text as string);
+						if (Contact.Contact is IUser)
+							client.ChatUser(Contact.Name, font, text as string, DateTime.UtcNow);
 						else
-							client.ChatGroup(Contact.Name, font, text as string);
+							client.ChatGroup(Contact.Name, font, text as string, DateTime.UtcNow);
 						AddChatMessage(client.Me.DisplayName, text as string, font, DateTime.UtcNow);
 					},
 					text => (text as string).Length > 0
@@ -69,10 +61,12 @@ namespace Client.UI
 			}
 		}
 
-		public ChatViewModel(ChatClient client, Contact contact)
+		public ChatViewModel(ChatClient client, IContact contact)
 		{
 			this.client = client;
 			ChatHistory = new FlowDocument();
+			ChatHistory.Background = Brushes.White;
+			ChatHistory.PagePadding = new Thickness(0);
 			ChatHistory.FontFamily = new FontFamily("Segoe UI");
 			ChatHistory.FontSize = new FontSizeConverter().ConvertFromString("10pt") as double? ?? 0;
 
@@ -97,7 +91,7 @@ namespace Client.UI
 			NotifyPropertyChanged("TextDecorations");
 		}
 
-		public void ChangeEntity(Contact newContact)
+		public void ChangeEntity(IContact newContact)
 		{
 			Contact = ContactViewModel.Create(client, newContact);
 

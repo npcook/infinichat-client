@@ -3,7 +3,9 @@
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
 		xmlns:me="clr-namespace:Client.UI"
-		Title="Infinichat" Height="450" MinHeight="400" Width="500" MinWidth="450" SaveWindowPosition="True" Background="{StaticResource BackgroundBrush}">
+    xmlns:view="clr-namespace:Client.UI.View"
+    xmlns:viewmodel="clr-namespace:Client.UI.ViewModel"
+		Title="Infinichat" Height="450" MinHeight="400" Width="500" MinWidth="450" SaveWindowPosition="True" Background="{StaticResource BackgroundBrush}" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="1">
 	<Window.Resources>
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
@@ -29,11 +31,9 @@
 			<TabItem Foreground="AliceBlue" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" VerticalAlignment="Stretch">
 				<TabItem.Header>
 					⌂
-					<!--<Path Data="M0,6 L7,0 L14,6 L12,6 L12,12 L2,12 L2,6" Fill="Black"/>-->
 				</TabItem.Header>
 				<TabItem.Content>
-					<!--<me:NewTabControl x:Name="NewTabPage" StartChat="NewTabStartChat"></me:NewTabControl>-->
-					<me:NewTabView x:Name="NewTabPage" />
+					<view:NewTabView x:Name="NewTabPage" />
 				</TabItem.Content>
 			</TabItem>
 		</TabControl>

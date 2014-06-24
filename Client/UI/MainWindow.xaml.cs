@@ -1,20 +1,11 @@
-﻿using System;
+﻿using Client.Protocol;
+using Client.UI.View;
+using Client.UI.ViewModel;
+using MahApps.Metro.Controls;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-
-using MahApps.Metro.Controls;
-using Client.Protocol;
 
 namespace Client.UI
 {
@@ -27,7 +18,7 @@ namespace Client.UI
 
 		public ChatClient client;
 		private FontOptions clientFont;
-		private Dictionary<Contact, ChatView> openChats = new Dictionary<Contact, ChatView>();
+		private Dictionary<IContact, ChatView> openChats = new Dictionary<IContact, ChatView>();
 		private NewTabViewModel newTabViewModel;
 
 		public MainWindow(ChatClient client)
@@ -85,7 +76,7 @@ namespace Client.UI
 			});
 		}
 
-		private void SwitchToChatPage(Contact entity)
+		private void SwitchToChatPage(IContact entity)
 		{
 			ChatView chat;
 			if (!openChats.TryGetValue(entity, out chat))
@@ -103,20 +94,12 @@ namespace Client.UI
 			}
 		}
 
-		private ChatView CreateChatPage(Contact entity)
+		private ChatView CreateChatPage(IContact entity)
 		{
 			var chat = new ChatView();
 			var chatVM = new ChatViewModel(client, entity);
 			chat.DataContext = chatVM;
 			chat.Margin = new Thickness(0);
-			chatVM.ChatSent += (sender, e) =>
-				{
-					if (entity is User)
-						client.ChatUser(entity.Name, clientFont, e.Message);
-					else
-						client.ChatGroup(entity.Name, clientFont, e.Message);
-					(sender as ChatViewModel).AddChatMessage(client.Me.DisplayName, e.Message, clientFont, DateTime.UtcNow);
-				};
 			openChats.Add(entity, chat);
 
 			ChatTabs.Items.Add(new ChatTabItem()
@@ -147,9 +130,9 @@ namespace Client.UI
 			Dispatcher.Invoke(() =>
 				{
 					ChatView chat;
-					if (!openChats.TryGetValue(e.Entity, out chat))
-						chat = CreateChatPage(e.Entity);
-					SwitchToChatPage(e.Entity);
+					if (!openChats.TryGetValue(e.Contact, out chat))
+						chat = CreateChatPage(e.Contact);
+					SwitchToChatPage(e.Contact);
 				});
 		}
 
@@ -160,7 +143,6 @@ namespace Client.UI
 
 		private void ChangeNameClick(object sender, RoutedEventArgs e)
 		{
-
 		}
 
 		private void ChangeFontClick(object sender, RoutedEventArgs e)
@@ -183,24 +165,37 @@ namespace Client.UI
 
 		}
 
+		private void ChangeStatus(UserStatus status)
+		{
+			client.ChangeStatus(status, (sender, e) =>
+				{
+					if (e.Success)
+					{
+						(ClientStatusButton.Content as TextBlock).Text = status.ToString();
+						ClientStatusButton.Foreground = App.GetUserStatusBrush(status);
+						ClientStatusBorder.Background = App.GetUserStatusBrush(status);
+					}
+				});
+		}
+
 		private void AvailableClick(object sender, RoutedEventArgs e)
 		{
-			client.ChangeStatus(UserStatus.Available);
+			ChangeStatus(UserStatus.Available);
 		}
 
 		private void AwayClick(object sender, RoutedEventArgs e)
 		{
-			client.ChangeStatus(UserStatus.Away);
+			ChangeStatus(UserStatus.Away);
 		}
 
 		private void BusyClick(object sender, RoutedEventArgs e)
 		{
-			client.ChangeStatus(UserStatus.Busy);
+			ChangeStatus(UserStatus.Busy);
 		}
 
 		private void OfflineClick(object sender, RoutedEventArgs e)
 		{
-			client.ChangeStatus(UserStatus.Offline);
+			ChangeStatus(UserStatus.Offline);
 		}
 	}
 }

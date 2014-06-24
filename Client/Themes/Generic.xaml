@@ -42,14 +42,7 @@
 										<Setter.Value>
 											<ControlTemplate TargetType="{x:Type Button}">
 												<Border x:Name="Main" Background="Transparent">
-													<Path x:Name="Cross" Stroke="#C9C9C9" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2">
-														<Path.Data>
-															<GeometryGroup>
-																<LineGeometry StartPoint="0, 0" EndPoint="7, 7"/>
-																<LineGeometry StartPoint="7, 0" EndPoint="0, 7"/>
-															</GeometryGroup>
-														</Path.Data>
-													</Path>
+													<Path x:Name="Cross" Data="M0,0 L7,7 M7,0 L0,7" Stroke="#C9C9C9" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2"/>
 												</Border>
 												<ControlTemplate.Triggers>
 													<MultiDataTrigger>

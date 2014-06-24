@@ -33,6 +33,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Resources\Infinity.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="log4net">
       <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
@@ -71,30 +74,31 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ExtensionMethods.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="Protocol\ChatClient.cs" />
-    <Compile Include="Protocol\ClientTypes.cs" />
-    <Compile Include="UI\BaseViewModel.cs" />
-    <Compile Include="UI\ChatControl.xaml.cs">
-      <DependentUpon>ChatControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="UI\ContactViewModel.cs" />
+    <Compile Include="UI\ViewModel\BaseViewModel.cs" />
+    <Compile Include="UI\ViewModel\ContactViewModel.cs" />
     <Compile Include="UI\ChatTabItem.cs" />
-    <Compile Include="UI\ChatView.xaml.cs">
+    <Compile Include="UI\ViewModel\ConversationViewModel.cs" />
+    <Compile Include="UI\ViewModel\MainWindowViewModel.cs" />
+    <Compile Include="UI\View\ChatView.xaml.cs">
       <DependentUpon>ChatView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UI\ChatViewModel.cs" />
+    <Compile Include="UI\ViewModel\ChatViewModel.cs" />
     <Compile Include="UI\FontDialog.xaml.cs">
       <DependentUpon>FontDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\MenuButton.xaml.cs">
       <DependentUpon>MenuButton.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UI\NewTabControl.xaml.cs">
-      <DependentUpon>NewTabControl.xaml</DependentUpon>
+    <Compile Include="UI\ViewModel\NewTabViewModel.cs" />
+    <Compile Include="UI\View\ConversationView.xaml.cs">
+      <DependentUpon>ConversationView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UI\NewTabViewModel.cs" />
-    <Compile Include="UI\NewTabView.xaml.cs">
+    <Compile Include="UI\View\MainWindowView.xaml.cs">
+      <DependentUpon>MainWindowView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\View\NewTabView.xaml.cs">
       <DependentUpon>NewTabView.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\RelayCommand.cs" />
@@ -103,11 +107,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="UI\ChatControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="UI\ChatView.xaml">
+    <Page Include="UI\View\ChatView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -138,11 +138,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="UI\NewTabControl.xaml">
+    <Page Include="UI\View\ConversationView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="UI\NewTabView.xaml">
+    <Page Include="UI\View\MainWindowView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\View\NewTabView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -161,6 +165,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Resource Include="Resources\Infinity.ico" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -171,15 +176,18 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
-    <Compile Include="Protocol\Network.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Content Include="protocol.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Protocol\Protocol.csproj">
+      <Project>{2f8b6ef4-c025-4664-a06f-f6ea99673d28}</Project>
+      <Name>Protocol</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
