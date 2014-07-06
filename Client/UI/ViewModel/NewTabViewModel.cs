@@ -36,6 +36,9 @@ namespace Client.UI.ViewModel
 			contactsView = new ListCollectionView(contactVMs);
 			client.UserDetailsChange += OnUserDetailsChange;
 			client.GroupDetailsChange += OnGroupDetailsChange;
+
+			UpdateContacts(client.Friends, Enumerable.Empty<IUser>());
+			UpdateContacts(client.Groups, Enumerable.Empty<IGroup>());
 		}
 
 		private void OnUserDetailsChange(object sender, UserDetailsEventArgs e)
@@ -72,6 +75,10 @@ namespace Client.UI.ViewModel
 
 			foreach (var contact in changedContacts)
 			{
+				// Don't include ourself in any lists
+				if (client.Me == contact)
+					continue;
+
 				var vm = contactVMs.Single(_ => _.Contact.Name == contact.Name);
 				if (contact is IUser)
 				{

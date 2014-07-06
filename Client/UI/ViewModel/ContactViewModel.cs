@@ -48,12 +48,12 @@ namespace Client.UI.ViewModel
 			entity.UserRemoved += OnUserRemoved;
 		}
 
-		void OnUserAdded(object sender, UserAddedEventArgs e)
+		void OnUserAdded(object sender, UserEventArgs e)
 		{
 			memberModels.Add(new UserViewModel(client, e.User));
 		}
 
-		void OnUserRemoved(object sender, UserRemovedEventArgs e)
+		void OnUserRemoved(object sender, UserEventArgs e)
 		{
 			memberModels.Remove(memberModels.Single(vm => vm.Name == e.User.Name));
 		}

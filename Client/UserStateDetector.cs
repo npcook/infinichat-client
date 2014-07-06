@@ -160,7 +160,7 @@ namespace Client
 
 			if (!IsIdle)
 			{
-				long MSToGo = idleThreshold - ticksSinceLastInput;
+				long MSToGo = (long) idleThreshold - (long) ticksSinceLastInput;
 				if (MSToGo < 0)
 				{
 					IsIdle = true;

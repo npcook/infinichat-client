@@ -6,11 +6,23 @@ using System.Threading.Tasks;
 
 namespace Client.Protocol
 {
+	public class NewConversationEventArgs : EventArgs
+	{
+		public readonly Conversation Conversation;
+
+		public NewConversationEventArgs(Conversation convo)
+		{
+			Conversation = convo;
+		}
+	}
+
 	public class ConversationManager
 	{
 		readonly ChatClient client;
 		readonly List<Conversation> conversations = new List<Conversation>();
 		readonly Dictionary<string, ConversationEvents> conversationEventsMap = new Dictionary<string, ConversationEvents>();
+
+		public event EventHandler<NewConversationEventArgs> NewConversation;
 
 		public IEnumerable<Conversation> Conversations
 		{ get { return conversations; } }
@@ -33,6 +45,11 @@ namespace Client.Protocol
 		{
 			var _e = new ChatReceivedEventArgs(new ChatMessage(e.User, e.Font, e.Body, e.Timestamp));
 
+			if (!conversationEventsMap.ContainsKey(e.User.Name))
+			{
+				CreateConversation(e.User);
+			}
+
 			conversationEventsMap[e.User.Name].RaiseChatReceived(_e);
 		}
 
@@ -40,11 +57,25 @@ namespace Client.Protocol
 		{
 			var _e = new ChatReceivedEventArgs(new ChatMessage(e.User, e.Font, e.Body, e.Timestamp));
 
+			if (!conversationEventsMap.ContainsKey(e.Group.Name))
+			{
+				CreateConversation(e.Group);
+			}
+
 			conversationEventsMap[e.Group.Name].RaiseChatReceived(_e);
 		}
 
 		void client_UserDetailsChange(object sender, UserDetailsEventArgs e)
 		{
+			foreach (var user in e.ChangedUsers)
+			{
+				foreach (var convo in conversations)
+				{
+					var participant = convo.Participants.SingleOrDefault(_ => _.User == user);
+					if (participant != null)
+						conversationEventsMap[convo.Contact.Name].RaiseUserChanged(new UserEventArgs(participant.User));
+				}
+			}
 		}
 
 		void client_GroupDetailsChange(object sender, GroupDetailsEventArgs e)
@@ -59,12 +90,12 @@ namespace Client.Protocol
 				foreach (var member in group.Members)
 				{
 					if (!oldMembers.Contains(member))
-						conversationEventsMap[convo.Name].RaiseUserAdded(new UserAddedEventArgs(member));
+						conversationEventsMap[convo.Name].RaiseUserAdded(new UserEventArgs(member));
 				}
 				foreach (var member in oldMembers)
 				{
 					if (!group.Members.Contains(member))
-						conversationEventsMap[convo.Name].RaiseUserRemoved(new UserRemovedEventArgs(member));
+						conversationEventsMap[convo.Name].RaiseUserRemoved(new UserEventArgs(member));
 				}
 			}
 		}
@@ -83,23 +114,21 @@ namespace Client.Protocol
 			conversations.Add(convo);
 			conversationEventsMap[who.Name] = events;
 
+			NewConversation.SafeInvoke(this, new NewConversationEventArgs(convo));
+
 			return convo;
 		}
-	}
 
-	public class UserAddedEventArgs : EventArgs
-	{
-		public UserAddedEventArgs(IUser user)
+		public void DeleteConversation(Conversation convo)
 		{
-			User = user;
+			conversations.Remove(convo);
+			conversationEventsMap.Remove(convo.Name);
 		}
-
-		public readonly IUser User;
 	}
 
-	public class UserRemovedEventArgs : EventArgs
+	public class UserEventArgs : EventArgs
 	{
-		public UserRemovedEventArgs(IUser user)
+		public UserEventArgs(IUser user)
 		{
 			User = user;
 		}
@@ -131,37 +160,35 @@ namespace Client.Protocol
 
 	class ConversationEvents
 	{
-		public event EventHandler<UserAddedEventArgs> UserAdded;
-		public event EventHandler<UserRemovedEventArgs> UserRemoved;
+		public event EventHandler<UserEventArgs> UserAdded;
+		public event EventHandler<UserEventArgs> UserChanged;
+		public event EventHandler<UserEventArgs> UserRemoved;
 		public event EventHandler<ChatReceivedEventArgs> ChatReceived;
 		public event EventHandler<UserTypingEventArgs> UserTyping;
 
-		public void RaiseUserAdded(UserAddedEventArgs e)
+		public void RaiseUserAdded(UserEventArgs e)
 		{
-			var handler = UserAdded;
-			if (handler != null)
-				handler.Invoke(this, e);
+			UserAdded.SafeInvoke(this, e);
 		}
 
-		public void RaiseUserRemoved(UserRemovedEventArgs e)
+		public void RaiseUserChanged(UserEventArgs e)
 		{
-			var handler = UserRemoved;
-			if (handler != null)
-				handler.Invoke(this, e);
+			UserChanged.SafeInvoke(this, e);
+		}
+
+		public void RaiseUserRemoved(UserEventArgs e)
+		{
+			UserRemoved.SafeInvoke(this, e);
 		}
 
 		public void RaiseChatReceived(ChatReceivedEventArgs e)
 		{
-			var handler = ChatReceived;
-			if (handler != null)
-				handler.Invoke(this, e);
+			ChatReceived.SafeInvoke(this, e);
 		}
 
 		public void RaiseUserTyping(UserTypingEventArgs e)
 		{
-			var handler = UserTyping;
-			if (handler != null)
-				handler.Invoke(this, e);
+			UserTyping.SafeInvoke(this, e);
 		}
 	}
 }

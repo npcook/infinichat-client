@@ -13,8 +13,9 @@ namespace Client.Protocol
 		List<ChatMessage> chatLog = new List<ChatMessage>();
 		ConversationEvents events;
 
-		public event EventHandler<UserAddedEventArgs> UserAdded;
-		public event EventHandler<UserRemovedEventArgs> UserRemoved;
+		public event EventHandler<UserEventArgs> UserAdded;
+		public event EventHandler<UserEventArgs> UserChanged;
+		public event EventHandler<UserEventArgs> UserRemoved;
 		public event EventHandler<ChatReceivedEventArgs> ChatReceived;
 		public event EventHandler<UserTypingEventArgs> UserTyping;
 		public event EventHandler<EventArgs> Ended;
@@ -34,6 +35,9 @@ namespace Client.Protocol
 		public IContact Contact
 		{ get; private set; }
 
+		public bool HasNewMessages
+		{ get; private set; }
+
 		internal Conversation(ChatClient client, IContact who, ConversationEvents events)
 		{
 			this.client = client;
@@ -41,19 +45,25 @@ namespace Client.Protocol
 			Name = who.Name;
 			Contact = who;
 
-			events.UserAdded += events_UserAdded;
-			events.UserRemoved += events_UserRemoved;
-			events.UserTyping += events_UserTyping;
-			events.ChatReceived += events_ChatReceived;
+			events.UserAdded += OnUserAdded;
+			events.UserChanged += OnUserChanged;
+			events.UserRemoved += OnUserRemoved;
+			events.UserTyping += OnUserTyping;
+			events.ChatReceived += OnChatReceived;
 		}
 
-		void events_UserAdded(object sender, UserAddedEventArgs e)
+		void OnUserAdded(object sender, UserEventArgs e)
 		{
 			participants.Add(new Participant(e.User));
 			UserAdded.SafeInvoke(this, e);
 		}
 
-		void events_UserRemoved(object sender, UserRemovedEventArgs e)
+		void OnUserChanged(object sender, UserEventArgs e)
+		{
+			UserChanged.SafeInvoke(this, e);
+		}
+
+		void OnUserRemoved(object sender, UserEventArgs e)
 		{
 			participants.Remove(GetParticipant(e.User.Name));
 			UserRemoved.SafeInvoke(this, e);
@@ -61,20 +71,21 @@ namespace Client.Protocol
 			{
 				Ended.SafeInvoke(this, new EventArgs());
 
-				events.UserAdded -= events_UserAdded;
-				events.UserRemoved -= events_UserRemoved;
-				events.UserTyping -= events_UserTyping;
-				events.ChatReceived -= events_ChatReceived;
+				events.UserAdded -= OnUserAdded;
+				events.UserChanged -= OnUserChanged;
+				events.UserRemoved -= OnUserRemoved;
+				events.UserTyping -= OnUserTyping;
+				events.ChatReceived -= OnChatReceived;
 			}
 		}
 
-		void events_UserTyping(object sender, UserTypingEventArgs e)
+		void OnUserTyping(object sender, UserTypingEventArgs e)
 		{
 			GetParticipant(e.User.Name).IsTyping = e.Starting;
 			UserTyping.SafeInvoke(this, e);
 		}
 
-		void events_ChatReceived(object sender, ChatReceivedEventArgs e)
+		void OnChatReceived(object sender, ChatReceivedEventArgs e)
 		{
 			chatLog.Add(e.Message);
 			ChatReceived.SafeInvoke(this, e);
@@ -85,11 +96,6 @@ namespace Client.Protocol
 			return participants.SingleOrDefault(participant => participant.User.Name == name);
 		}
 
-		protected void OnChat(ChatReceivedEventArgs e)
-		{
-			ChatReceived.SafeInvoke(this, e);
-		}
-
 		public void SendMessage(string message, FontOptions font)
 		{
 			SendMessage(message, font, DateTime.UtcNow);
@@ -98,9 +104,9 @@ namespace Client.Protocol
 		public void SendMessage(string message, FontOptions font, DateTime timestamp)
 		{
 			if (IsGroup)
-				client.ChatGroup(Name, font, message, timestamp);
+				client.ChatGroup(Name, font, message, timestamp, null);
 			else
-				client.ChatUser(Name, font, message, timestamp);
+				client.ChatUser(Name, font, message, timestamp, null);
 
 			chatLog.Add(new ChatMessage(client.Me, font, message, timestamp));
 		}

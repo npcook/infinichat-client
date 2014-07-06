@@ -58,8 +58,8 @@ namespace Client.Protocol
 
 	public interface IGroup : IContact
 	{
-		event EventHandler<UserAddedEventArgs> UserAdded;
-		event EventHandler<UserRemovedEventArgs> UserRemoved;
+		event EventHandler<UserEventArgs> UserAdded;
+		event EventHandler<UserEventArgs> UserRemoved;
 
 		ICollection<IUser> Members
 		{ get; }
@@ -162,8 +162,8 @@ namespace Client.Protocol
 		List<IUser> members;
 		bool disposed;
 
-		public event EventHandler<UserAddedEventArgs> UserAdded;
-		public event EventHandler<UserRemovedEventArgs> UserRemoved;
+		public event EventHandler<UserEventArgs> UserAdded;
+		public event EventHandler<UserEventArgs> UserRemoved;
 		public event EventHandler<ChatEventArgs> Chatted;
 		public event EventHandler<EventArgs> Changed;
 
@@ -207,7 +207,7 @@ namespace Client.Protocol
 					if (!oldMembers.Contains(member))
 					{
 						members.Add(member);
-						UserAdded.SafeInvoke(this, new UserAddedEventArgs(member));
+						UserAdded.SafeInvoke(this, new UserEventArgs(member));
 					}
 				}
 				foreach (var member in oldMembers)
@@ -215,7 +215,7 @@ namespace Client.Protocol
 					if (!newMembers.Contains(member))
 					{
 						members.Remove(member);
-						UserRemoved.SafeInvoke(this, new UserRemovedEventArgs(member));
+						UserRemoved.SafeInvoke(this, new UserEventArgs(member));
 					}
 				}
 			}
@@ -349,11 +349,11 @@ namespace Client.Protocol
 		}
 	}
 
-	public class LoginEventArgs : ReplyEventArgs
+	public class LoginReplyEventArgs : ReplyEventArgs
 	{
 		public readonly IUser Me;
 
-		public LoginEventArgs(int resultCode, string resultMessage, IUser me)
+		public LoginReplyEventArgs(int resultCode, string resultMessage, IUser me)
 			: base(resultCode, resultMessage)
 		{
 			Me = me;

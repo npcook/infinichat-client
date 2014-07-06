@@ -45,8 +45,8 @@
 			<Viewbox Stretch="Uniform" StretchDirection="DownOnly" MinHeight="30">
 				<TextBlock x:Name="NameLabel" Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="29" FontWeight="Light" HorizontalAlignment="Center" VerticalAlignment="Top"/>
 			</Viewbox>
-			<!--<TextBlock x:Name="StatusLabel" Text="{Binding Contact.Status}" Foreground="{Binding Contact.DisplayBrush}" FontSize="18" FontWeight="Light" HorizontalAlignment="Center" Visibility="Collapsed" />
-			<ListBox x:Name="GroupMembersListBox" Background="Transparent" Visibility="Collapsed" ItemsSource="{Binding Contact.Members}"/>-->
+			<TextBlock x:Name="StatusLabel" Text="{Binding Subtitle}" Foreground="{Binding SubtitleBrush}" FontSize="18" FontWeight="Light" HorizontalAlignment="Center" />
+			<ListBox x:Name="GroupMembersListBox" Background="Transparent" ItemsSource="{Binding Contact.Members}"/>
 		</StackPanel>
 	</Grid>
 </UserControl>

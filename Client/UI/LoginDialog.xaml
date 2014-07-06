@@ -25,7 +25,7 @@
 		<CheckBox x:Name="RememberUsernameCheckBox" Content="Remember Username" HorizontalAlignment="Left" Margin="89,142,0,0" VerticalAlignment="Top" Width="161" TabIndex="3"/>
 		<CheckBox x:Name="AutoLoginCheckBox" Content="Log me in automatically" HorizontalAlignment="Left" Margin="89,164,0,0" VerticalAlignment="Top" Width="161" IsEnabled="{Binding IsChecked, ElementName=RememberUsernameCheckBox}" TabIndex="4"/>
 		<Button x:Name="LoginButton" Content="Login" Margin="0,0,90,10" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="75" Click="LoginButtonClick" IsDefault="True" TabIndex="5"/>
-		<Button Content="Cancel" Margin="0,0,10,10" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="75" Click="CancelButtonClick" TabIndex="6" IsCancel="True"/>
+		<Button Content="Quit" Margin="0,0,10,10" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="75" Click="CancelButtonClick" TabIndex="6" IsCancel="True"/>
 		<ComboBox x:Name="ServerComboBox"  Margin="89,111,10,0" Height="24" TabIndex="2" IsEditable="True" VerticalAlignment="Top">
 			<ComboBoxItem Content="Infinichat Main Server" Tag="chat.tinfinity.net"/>
 			<ComboBoxItem Content="Local Server" Tag="localhost"/>

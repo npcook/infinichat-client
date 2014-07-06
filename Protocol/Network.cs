@@ -1,20 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Net.Sockets;
-using System.Threading;
-
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 using Message = Newtonsoft.Json.Linq.JObject;
 
 namespace Client.Protocol
 {
 	public enum ResultCode
 	{
+		// Codes in the 100s are client-defined for client use only
+		NotSent = 100,
+		NoReply = 101,
+		BadMessage = 102,
+
+		// 200s are for success
 		OK = 200,
 		Created = 201,
 		Accepted = 202,
@@ -22,11 +26,13 @@ namespace Client.Protocol
 		ResetContent = 205,
 		PartialContent = 206,
 
+		// 300s are for client mess-ups
 		BadRequest = 400,
 		Unauthorized = 401,
 		Forbidden = 403,
 		NotFound = 404,
 
+		// 500s are for server mess-ups
 		InternalError = 500,
 		NotImplemented = 501,
 		ServiceUnavailable = 503,
@@ -45,9 +51,19 @@ namespace Client.Protocol
 		public readonly Message Message;
 	}
 
+	public class StreamErrorEventArgs : EventArgs
+	{
+		public StreamErrorEventArgs(Exception ex)
+		{
+			Exception = ex;
+		}
+
+		public readonly Exception Exception;
+	}
+
 	class Network : IDisposable
 	{
-		private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+		static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
 		public delegate void MessageReplyCallback(string messageName, ReplyResult result, Message message);
 
@@ -58,7 +74,7 @@ namespace Client.Protocol
 			Expired,
 		}
 
-		private struct MessageCallbackInfo
+		struct MessageCallbackInfo
 		{
 			public string MessageName;
 			public MessageReplyCallback Callback;
@@ -66,24 +82,21 @@ namespace Client.Protocol
 			public string Tag;
 		}
 
-		private List<MessageCallbackInfo> outstandingCallbacks = new List<MessageCallbackInfo>();
-		private bool disposed = false;
-		private Stream source;
-		private StreamReader reader;
-		private int currentTagNumber = 0;
-		private volatile bool stop = false;
+		List<MessageCallbackInfo> outstandingCallbacks = new List<MessageCallbackInfo>();
+		bool disposed = false;
+		Stream source;
+		StreamReader reader;
+		int currentTagNumber = 0;
+		volatile bool stop = false;
 
-		public event EventHandler<MessageEventArgs> OnMessage;
+		public event EventHandler<MessageEventArgs> MessageReceived;
+		public event EventHandler<StreamErrorEventArgs> StreamError;
 
 		public Stream Stream
-		{
-			get { return source; }
-		}
+		{ get { return source; } }
 
 		public Network(Stream source)
 		{
-//			System.Diagnostics.Debug.Assert(source != null);
-
 			this.source = source;
 			reader = new StreamReader(source);
 		}
@@ -99,7 +112,7 @@ namespace Client.Protocol
 			stop = true;
 		}
 
-		private void ReadFromSource()
+		void ReadFromSource()
 		{
 			int nextPruneTick = Environment.TickCount + 60 * 1000;
 
@@ -112,32 +125,15 @@ namespace Client.Protocol
 				}
 				catch (IOException ex)
 				{
-					SocketException socketEx = ex.InnerException as SocketException;
-					if (socketEx != null)
-					{
-						switch (socketEx.SocketErrorCode)
-						{
-							case SocketError.ConnectionAborted:
-							case SocketError.ConnectionReset:
-								return;
-
-							case SocketError.Interrupted:
-								if (stop)
-									return;
-								else
-									throw;
-
-							default:
-								throw;
-						}
-					}
-					else
-						throw;
+					StreamError.SafeInvoke(this, new StreamErrorEventArgs(ex));
+					break;
 				}
 				catch (ObjectDisposedException)
 				{
-					return;
+					break;
 				}
+
+				log.Debug(rawPacket);
 
 				var packet = Message.Parse(rawPacket);
 
@@ -148,22 +144,23 @@ namespace Client.Protocol
 				string replyName = (packet["reply"] ?? "").ToString();
 				if (messageName != "")
 				{
-					if (OnMessage != null)
-						OnMessage(this, new MessageEventArgs(packet));
+					MessageReceived.SafeInvoke(this, new MessageEventArgs(packet));
 				}
 				else if (replyName != "")
 				{
-					string tag = rawTag.ToString();
-					var replyCallbacks = from callback in outstandingCallbacks
-										 where callback.Tag == tag
-										 select callback;
-
-					foreach (var callback in replyCallbacks.ToArray())
+					if (CheckObjectFields("reply", packet, "tag", "result", "result_message"))
 					{
-						callback.Callback(callback.MessageName, ReplyResult.Success, packet);
+						string tag = packet["tag"].ToString();
+						var callback = outstandingCallbacks.SingleOrDefault(_callback => _callback.Tag == tag);
 
-						outstandingCallbacks.Remove(callback);
+						if (callback.Callback != null)
+						{
+							callback.Callback(callback.MessageName, ReplyResult.Success, packet);
+							outstandingCallbacks.Remove(callback);
+						}
 					}
+					else
+						log.Debug("Discarding reply");
 				}
 				else
 				{
@@ -177,6 +174,12 @@ namespace Client.Protocol
 					nextPruneTick += 60 * 1000;
 				}
 			}
+
+			foreach (var callback in outstandingCallbacks)
+			{
+				callback.Callback(callback.MessageName, ReplyResult.Fail, null);
+			}
+			outstandingCallbacks.Clear();
 		}
 
 		public Message CreateMessage(string messageName)
@@ -215,7 +218,7 @@ namespace Client.Protocol
 				{
 					MessageName = message["message"].ToString(),
 					Callback = replyCallback,
-					ExpireTick = Environment.TickCount + 1000 * 60,
+					ExpireTick = Environment.TickCount + 1000 * 10,
 					Tag = message["tag"].ToString(),
 				});
 			}
@@ -228,15 +231,43 @@ namespace Client.Protocol
 			log.Debug("...Done");
 		}
 
-		private void PruneCallbacks()
+		void PruneCallbacks()
 		{
-			var expiredCallbacks = from callback in outstandingCallbacks
-								   where callback.ExpireTick < Environment.TickCount
-								   select callback;
+			var expiredCallbacks = new List<MessageCallbackInfo>(from callback in outstandingCallbacks
+																 where callback.ExpireTick < Environment.TickCount
+																 select callback);
 
 			foreach (var callback in expiredCallbacks)
 			{
 				outstandingCallbacks.Remove(callback);
+			}
+		}
+	
+		// Verify that all required object fields are filled
+		// Returns true if all fields were found
+		public bool CheckObjectFields(string name, JToken obj, params string[] fields)
+		{
+			if (log.IsDebugEnabled)
+			{
+				var missingFields = new List<string>();
+				foreach (var field in fields)
+					if (obj[field] == null)
+						missingFields.Add(field);
+
+				if (missingFields.Count > 0)
+				{
+					log.DebugFormat("Missing required fields for object '{0}': {1}", name, string.Join(", ", missingFields));
+					return false;
+				}
+				else
+					return true;
+			}
+			else
+			{
+				foreach (var field in fields)
+					if (obj[field] == null)
+						return false;
+				return true;
 			}
 		}
 

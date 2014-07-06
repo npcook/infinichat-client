@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -21,6 +23,7 @@ namespace Client.UI.ViewModel
 		string currentMessage = "";
 		RelayCommand sendChatCommand;
 		FontOptions font;
+		bool isHighlighted;
 
 		public Conversation Conversation
 		{ get; private set; }
@@ -64,6 +67,46 @@ namespace Client.UI.ViewModel
 
 		public string Title
 		{ get { return Conversation.Contact.DisplayName; } }
+
+		public Brush TitleBrush
+		{ get { return Brushes.Black; } }
+
+		public string Subtitle
+		{
+			get
+			{
+				if (Conversation.IsGroup)
+					return "";
+				else
+					return (Conversation.Contact as IUser).Status.ToString();
+			}
+		}
+
+		public Brush SubtitleBrush
+		{
+			get
+			{
+				if (Conversation.IsGroup)
+					return Brushes.Transparent;
+				else
+					return App.GetUserStatusBrush((Conversation.Contact as IUser).Status);
+			}
+		}
+
+		public bool IsHighlighted
+		{
+			get { return isHighlighted; }
+			set
+			{
+				isHighlighted = value;
+				NotifyPropertyChanged("IsHighlighted");
+			}
+		}
+
+		void OnHighlightElapsed(object sender, ElapsedEventArgs e)
+		{
+			IsHighlighted = !IsHighlighted;
+		}
 
 		public ConversationViewModel(ChatClient client, Conversation convo)
 		{
@@ -109,6 +152,7 @@ namespace Client.UI.ViewModel
 			{
 				Conversation.Contact.Changed -= Contact_Changed;
 				Conversation.UserAdded -= Conversation_UserAdded;
+				Conversation.UserChanged -= Conversation_UserChanged;
 				Conversation.UserRemoved -= Conversation_UserRemoved;
 				Conversation.ChatReceived -= Conversation_ChatReceived;
 				Conversation.UserTyping -= Conversation_UserTyping;
@@ -119,6 +163,7 @@ namespace Client.UI.ViewModel
 
 			Conversation.Contact.Changed += Contact_Changed;
 			Conversation.UserAdded += Conversation_UserAdded;
+			Conversation.UserChanged += Conversation_UserChanged;
 			Conversation.UserRemoved += Conversation_UserRemoved;
 			Conversation.ChatReceived += Conversation_ChatReceived;
 			Conversation.UserTyping += Conversation_UserTyping;
@@ -130,9 +175,17 @@ namespace Client.UI.ViewModel
 			typingParticipants.Clear();
 		}
 
+		void Conversation_UserChanged(object sender, UserEventArgs e)
+		{
+//			throw new NotImplementedException();
+		}
+
 		void Contact_Changed(object sender, EventArgs e)
 		{
 			NotifyPropertyChanged("Title");
+			NotifyPropertyChanged("TitleBrush");
+			NotifyPropertyChanged("Subtitle");
+			NotifyPropertyChanged("SubtitleBrush");
 		}
 
 		void Conversation_Ended(object sender, EventArgs e)
@@ -151,55 +204,80 @@ namespace Client.UI.ViewModel
 
 		void Conversation_ChatReceived(object _sender, ChatReceivedEventArgs e)
 		{
-			var message = e.Message.Text;
-			var font = e.Message.Font;
-			var sender = e.Message.Sender;
-
-			// Add this color to the brush cache if it's not there already
-			var brush = App.GetBrush(font.Color);
-
-			Paragraph paragraph;
-			if (sender != lastSender)
+			App.Current.Dispatcher.BeginInvoke(new Action(() =>
 			{
-				lastSender = sender;
+				var message = e.Message.Text;
+				var font = e.Message.Font;
+				var sender = e.Message.Sender;
+
+				// Add this color to the brush cache if it's not there already
+				var brush = App.GetBrush(font.Color);
+
+				Paragraph paragraph;
+				if (sender != lastSender)
+				{
+					lastSender = sender;
+					paragraph = new Paragraph()
+					{
+						Foreground = Brushes.DarkBlue,
+						FontSize = ChatHistory.FontSize + 1,
+						Margin = new Thickness(0, 4.0, 0, 0),
+					};
+					paragraph.Inlines.Add(new Run(sender.DisplayName));
+					ChatHistory.Blocks.Add(paragraph);
+				}
+
 				paragraph = new Paragraph()
 				{
-					Foreground = Brushes.DarkBlue,
-					FontSize = ChatHistory.FontSize + 1,
-					Margin = new Thickness(0, 4.0, 0, 0),
+					FontFamily = new FontFamily(font.Family + ",Segoe UI"),
+					Foreground = brush,
+					LineHeight = 3 * ChatHistory.FontSize / 2,
+					Margin = new Thickness(16.0, 0, 0, 0),
 				};
-				paragraph.Inlines.Add(new Run(sender.DisplayName));
+				var indexList = App.Current.SearchForEmoticons(message);
+
+				int startIndex = 0;
+				for (int i = 0; i < indexList.Count; ++i)
+				{
+					paragraph.Inlines.Add(new Run(message.Substring(startIndex, indexList[i].Key - startIndex)));
+
+/*					var picture = new System.Windows.Forms.PictureBox();
+					picture.Image = indexList[i].Value.Image;
+
+					var host = new System.Windows.Forms.Integration.WindowsFormsHost();
+					host.Child = picture;
+
+					paragraph.Inlines.Add(new InlineUIContainer(host));*/
+
+					var picture = new EmoteImage();
+					picture.Emote = indexList[i].Value;
+
+					paragraph.Inlines.Add(new InlineUIContainer(picture));
+
+					startIndex = indexList[i].Key + indexList[i].Value.Shortcut.Length;
+				}
+				paragraph.Inlines.Add(new Run(message.Substring(startIndex)));
+
+				if (font.Style.HasFlag(Protocol.FontStyle.Bold))
+					paragraph.FontWeight = FontWeights.Bold;
+				if (font.Style.HasFlag(Protocol.FontStyle.Italic))
+					paragraph.FontStyle = FontStyles.Italic;
+				if (font.Style.HasFlag(Protocol.FontStyle.Underline))
+				{
+					paragraph.TextDecorations = new TextDecorationCollection();
+					paragraph.TextDecorations.Add(System.Windows.TextDecorations.Underline);
+				}
+
 				ChatHistory.Blocks.Add(paragraph);
-			}
-
-			paragraph = new Paragraph()
-			{
-				FontFamily = new FontFamily(font.Family + ",Segoe UI"),
-				Foreground = brush,
-				LineHeight = 3 * ChatHistory.FontSize / 2,
-				Margin = new Thickness(16.0, 0, 0, 0),
-			};
-			paragraph.Inlines.Add(new Run(message));
-
-			if (font.Style.HasFlag(Protocol.FontStyle.Bold))
-				paragraph.FontWeight = FontWeights.Bold;
-			if (font.Style.HasFlag(Protocol.FontStyle.Italic))
-				paragraph.FontStyle = FontStyles.Italic;
-			if (font.Style.HasFlag(Protocol.FontStyle.Underline))
-			{
-				paragraph.TextDecorations = new TextDecorationCollection();
-				paragraph.TextDecorations.Add(System.Windows.TextDecorations.Underline);
-			}
-
-			ChatHistory.Blocks.Add(paragraph);
+			}));
 		}
 
-		void Conversation_UserRemoved(object sender, UserRemovedEventArgs e)
+		void Conversation_UserRemoved(object sender, UserEventArgs e)
 		{
 			participants.Remove(participants.Single(vm => vm.Contact == e.User));
 		}
 
-		void Conversation_UserAdded(object sender, UserAddedEventArgs e)
+		void Conversation_UserAdded(object sender, UserEventArgs e)
 		{
 			participants.Add(new UserViewModel(client, e.User));
 		}

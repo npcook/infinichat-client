@@ -1,4 +1,5 @@
-﻿using MahApps.Metro.Controls;
+﻿using Client.Protocol;
+using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using System;
 using System.Collections.Generic;
@@ -46,30 +47,38 @@ namespace Client.UI
 			else
 				UsernameTextBox.Focus();
 
-			var matchingServer = from ComboBoxItem serverItem in ServerComboBox.Items where serverItem.Tag as string == serverName select serverItem;
-
-			ServerComboBox.Text = serverName;
-			foreach (var server in matchingServer)
-				ServerComboBox.SelectedItem = server;
+			var matchingServer = ServerComboBox.Items.Cast<ComboBoxItem>().SingleOrDefault(item => item.Tag as string == serverName);
+			if (matchingServer != null)
+			{
+				ServerComboBox.Text = serverName;
+				ServerComboBox.SelectedItem = matchingServer;
+			}
 
 			if (isFirstRun && password != "")
 			{
-				Hide();
-
 				PasswordTextBox.Password = password;
+				AutoLoginCheckBox.IsChecked = true;
+			}
+
+			Loaded += OnLoaded;
+		}
+
+		void OnLoaded(object sender, RoutedEventArgs e)
+		{
+			if (AutoLoginCheckBox.IsChecked ?? false)
+			{
+				Hide();
 				TryLogIn();
 			}
 		}
 
-		private void LoginButtonClick(object sender, RoutedEventArgs e)
+		void LoginButtonClick(object sender, RoutedEventArgs e)
 		{
 			TryLogIn();
 		}
 
-		private void TryLogIn()
+		void TryLogIn()
 		{
-			MainGrid.IsEnabled = false;
-
 			string username = UsernameTextBox.Text;
 			string password = PasswordTextBox.Password;
 			string server;
@@ -78,62 +87,33 @@ namespace Client.UI
 			else
 				server = (ServerComboBox.SelectedItem as ComboBoxItem).Tag as string;
 
-			new Thread(() =>
+			client = new ChatClient();
+			App.ConnectionManager = new ConnectionManager(client);
+			if (App.ConnectionManager.Connect(server, ConnectionManager.DefaultPort, username, password))
 			{
-				try
-				{
-					var netClient = new TcpClient(server, 49520);
-					client = new Protocol.ChatClient();
-					client.Connect(netClient.GetStream());
-					client.LogIn(username, password, OnLoginReply);
-				}
-				catch (SocketException ex)
-				{
-					Dispatcher.Invoke(() =>
-					{
-						MainGrid.IsEnabled = true;
+				var settings = Properties.Settings.Default;
+				if (RememberUsernameCheckBox.IsChecked ?? false)
+					settings.Username = username;
 
-						MessageBox.Show("Could not log in.", ex.Message);
-					});
-				}
-			}).Start();
-		}
+				settings.Server = server;
 
-		private void OnLoginReply(object sender, Protocol.LoginEventArgs e)
-		{
-			if (e.Success)
-			{
-				Dispatcher.Invoke(new Action(() =>
-					{
-						var settings = Properties.Settings.Default;
-						if (RememberUsernameCheckBox.IsChecked ?? false)
-							settings.Username = UsernameTextBox.Text;
+				if (AutoLoginCheckBox.IsChecked ?? false)
+					settings.Password = password;
 
-						if (ServerComboBox.SelectedItem == null)
-							settings.Server = ServerComboBox.Text;
-						else
-							settings.Server = (ServerComboBox.SelectedItem as ComboBoxItem).Tag as string;
+				settings.Save();
 
-						if (AutoLoginCheckBox.IsChecked ?? false)
-							settings.Password = PasswordTextBox.Password;
-
-						settings.Save();
-
-						App.Current.MainWindow = new View.MainWindowView();
-						App.Current.MainWindow.DataContext = new ViewModel.MainWindowViewModel(client);
-						App.Current.MainWindow.Show();
-//						App.Current.MainWindow = new MainWindow(client);
-//						App.Current.MainWindow.Show();
-						Close();
-					}));
+				App.Current.MainWindow = new View.MainWindowView();
+				App.Current.MainWindow.DataContext = new ViewModel.MainWindowViewModel(client, App.ConnectionManager);
+				App.Current.MainWindow.Show();
+				Close();
 			}
 			else
 			{
-				Dispatcher.Invoke(() => { MainGrid.IsEnabled = true; });
+				Show();
 			}
 		}
 
-		private void CancelButtonClick(object sender, RoutedEventArgs e)
+		void CancelButtonClick(object sender, RoutedEventArgs e)
 		{
 			Close();
 		}
