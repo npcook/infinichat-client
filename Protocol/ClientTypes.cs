@@ -151,6 +151,8 @@ namespace Client.Protocol
 
 			if (disposing)
 			{
+				Changed.CheckInvokeList();
+				Chatted.CheckInvokeList();
 				client.UserChat -= client_UserChat;
 			}
 		}
@@ -239,6 +241,8 @@ namespace Client.Protocol
 
 			if (disposing)
 			{
+				Changed.CheckInvokeList();
+				Chatted.CheckInvokeList();
 				client.GroupChat -= client_GroupChat;
 			}
 		}

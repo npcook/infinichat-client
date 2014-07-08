@@ -18,27 +18,32 @@
 				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Blue.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseLight.xaml" />
 			</ResourceDictionary.MergedDictionaries>
-			<DataTemplate x:Key="UserTemplate" DataType="me:UserViewModel">
+			<DataTemplate x:Key="UserTemplate" DataType="{x:Type ViewModel:UserViewModel}">
 				<StackPanel Orientation="Horizontal">
-					<Rectangle Fill="{Binding DisplayBrush}" Width="10pt" Height="10pt" Margin="0,0,5,0" Stroke="White"/>
-					<TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"/>
+					<Rectangle Fill="{Binding DisplayBrush}" Width="{Binding ElementName=NameText, Path=FontSize}" Height="{Binding ElementName=NameText, Path=FontSize}" Margin="0,0,5,0" Stroke="White"/>
+					<TextBlock x:Name="NameText" Text="{Binding DisplayName}" FontSize="14" VerticalAlignment="Center"/>
 				</StackPanel>
 			</DataTemplate>
-			<DataTemplate x:Key="GroupTemplate" DataType="me:GroupViewModel">
+			<DataTemplate x:Key="GroupTemplate" DataType="{x:Type ViewModel:GroupViewModel}">
 				<StackPanel Orientation="Horizontal">
-					<Rectangle Fill="Transparent" Width="10pt" Height="10pt" Margin="0,0,5,0" Stroke="White"/>
-					<TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"/>
+					<Rectangle Fill="Transparent" Width="{Binding ElementName=NameText, Path=FontSize}" Height="{Binding ElementName=NameText, Path=FontSize}" Margin="0,0,5,0" Stroke="White"/>
+					<TextBlock x:Name="NameText" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
 				</StackPanel>
 			</DataTemplate>
-			<view:ListViewTemplateSelector x:Key="FriendsTemplateSelector" UserTemplate="{StaticResource UserTemplate}" GroupTemplate="{StaticResource GroupTemplate}"/>
+			<view:ContactTemplateSelector x:Key="FriendsTemplateSelector" UserTemplate="{StaticResource UserTemplate}" GroupTemplate="{StaticResource GroupTemplate}"/>
 		</ResourceDictionary>
 	</UserControl.Resources>
 	<DockPanel>
 		<DockPanel DockPanel.Dock="Bottom">
-			<Button x:Name="AddFriendButton" Content="Add" Width="70" Click="AddFriendButtonClick" DockPanel.Dock="Right"/>
+			<Button x:Name="AddFriendButton" Content="Add" Width="70" Command="{Binding AddFriendCommand}" DockPanel.Dock="Right"/>
 			<Label Content="Add Friend: " Target="{Binding ElementName=AddFriendTextBox, Mode=OneWay}" DockPanel.Dock="Left"/>
-			<TextBox x:Name="AddFriendTextBox" Width="Auto" Margin="0,0,5,0" DockPanel.Dock="Left" />
+			<TextBox x:Name="AddFriendTextBox" Text="{Binding AddFriendText, UpdateSourceTrigger=PropertyChanged}" Width="Auto" Margin="0,0,5,0" DockPanel.Dock="Left" />
 		</DockPanel>
-		<ListBox x:Name="FriendListBox" ItemsSource="{Binding ContactsView}" ItemTemplateSelector="{StaticResource FriendsTemplateSelector}" SelectedIndex="-1" MouseDoubleClick="FriendListBoxDoubleClick" FontSize="12pt" Background="Transparent" BorderThickness="0" DockPanel.Dock="Top" />
+		<ContentControl Width="150" Margin="5" DockPanel.Dock="Right" Content="{Binding ElementName=FriendListBox, Path=SelectedItem}">
+			<ContentControl.ContentTemplateSelector>
+				<view:ContactTemplateSelector UserTemplate="{StaticResource UserPanelTemplate}" GroupTemplate="{StaticResource GroupPanelTemplate}"/>
+			</ContentControl.ContentTemplateSelector>
+		</ContentControl>
+		<ListBox x:Name="FriendListBox" ItemsSource="{Binding ContactsView}" ItemTemplateSelector="{StaticResource FriendsTemplateSelector}" SelectedIndex="-1" MouseDoubleClick="FriendListBoxDoubleClick" Background="Transparent" BorderThickness="0" DockPanel.Dock="Left" />
 	</DockPanel>
 </UserControl>

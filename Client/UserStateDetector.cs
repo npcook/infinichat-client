@@ -96,7 +96,7 @@ namespace Client
 			{
 				ShowActivated = false,
 				ShowInTaskbar = false,
-				IsHitTestVisible = false,
+				WindowStyle = System.Windows.WindowStyle.None,
 				Width = 0,
 				Height = 0,
 			};
@@ -106,6 +106,8 @@ namespace Client
 
 		private void MessageWindowLoaded(object sender, RoutedEventArgs e)
 		{
+			messageWindow.Loaded -= MessageWindowLoaded;
+
 			HwndSource source = HwndSource.FromVisual(messageWindow) as HwndSource;
 
 			if (source != null)

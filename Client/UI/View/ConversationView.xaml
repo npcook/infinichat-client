@@ -4,21 +4,15 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
 			 xmlns:view="clr-namespace:Client.UI.View"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:ViewModel="clr-namespace:Client.UI.ViewModel" x:Class="Client.UI.View.ConversationView" 
-             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300" d:DataContext="{d:DesignInstance {x:Type ViewModel:ConversationViewModel}}">
+             xmlns:ViewModel="clr-namespace:Client.UI.ViewModel" x:Class="Client.UI.View.ConversationView" FocusManager.FocusedElement="{Binding ElementName=ChatInput}"
+             
+			 mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300" d:DataContext="{d:DesignInstance {x:Type ViewModel:ConversationViewModel}}">
 	<UserControl.Resources>
 		<ResourceDictionary>
-			<ResourceDictionary.MergedDictionaries>
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml" />
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Blue.xaml" />
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseLight.xaml" />
-			</ResourceDictionary.MergedDictionaries>
+			<view:ContactTemplateSelector x:Key="ContactSelector" UserTemplate="{StaticResource UserPanelTemplate}" GroupTemplate="{StaticResource GroupPanelTemplate}"/>
 		</ResourceDictionary>
 	</UserControl.Resources>
-
-	<Grid x:Name="MainGrid" Background="{StaticResource BackgroundBrush}" Margin="0">
+	<Grid Background="{StaticResource BackgroundBrush}" Margin="0">
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="150"/>
 			<ColumnDefinition Width="Auto"/>
@@ -30,8 +24,7 @@
 			<RowDefinition Height="44" MinHeight="44" MaxHeight="150"/>
 		</Grid.RowDefinitions>
 
-		<!--<RichTextBox x:Name="ChatHistory" IsReadOnly="True" IsReadOnlyCaretVisible="False" FontSize="10pt" BorderThickness="0" VerticalScrollBarVisibility="Visible" IsDocumentEnabled="True" Grid.Column="2" Grid.Row="0"/>-->
-		<FlowDocumentScrollViewer x:Name="ChatHistory" Document="{Binding ChatHistory}" FontSize="10pt" Grid.Column="2" Grid.Row="0" Margin="10,0,0,0"/>
+		<FlowDocumentScrollViewer x:Name="ChatHistory" Zoom="100" MinZoom="100" MaxZoom="100" Document="{Binding ChatHistory}" FontSize="10pt" Grid.Column="2" Grid.Row="0" Margin="10,0,0,0" TextInput="OnHistoryTextInput"/>
 		<GridSplitter Height="5" Background="{StaticResource BackgroundBrush}" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" Focusable="False" Grid.Column="2" Grid.Row="1"/>
 		<TextBox x:Name="ChatInput" Text="{Binding CurrentMessage, UpdateSourceTrigger=PropertyChanged}" FontFamily="{Binding FontFamily}" FontWeight="{Binding FontWeight}" FontStyle="{Binding FontStyle}" TextDecorations="{Binding TextDecorations}" VerticalAlignment="Stretch" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Grid.Column="2" Grid.Row="2" Margin="10,0,0,0">
 			<TextBox.Foreground>
@@ -41,12 +34,6 @@
 				<KeyBinding Command="{Binding SendChatCommand}" Key="Enter"/>
 			</TextBox.InputBindings>
 		</TextBox>
-		<StackPanel x:Name="ContactPanel" Orientation="Vertical" Grid.Column="0" Grid.Row="0">
-			<Viewbox Stretch="Uniform" StretchDirection="DownOnly" MinHeight="30">
-				<TextBlock x:Name="NameLabel" Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="29" FontWeight="Light" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-			</Viewbox>
-			<TextBlock x:Name="StatusLabel" Text="{Binding Subtitle}" Foreground="{Binding SubtitleBrush}" FontSize="18" FontWeight="Light" HorizontalAlignment="Center" />
-			<ListBox x:Name="GroupMembersListBox" Background="Transparent" ItemsSource="{Binding Contact.Members}"/>
-		</StackPanel>
+		<ContentControl Content="{Binding Contact}" ContentTemplateSelector="{StaticResource ContactSelector}" Grid.Column="0" Grid.Row="0"/>
 	</Grid>
 </UserControl>

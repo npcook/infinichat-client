@@ -46,6 +46,9 @@ namespace Client.UI.ViewModel
 		{
 			entity.UserAdded += OnUserAdded;
 			entity.UserRemoved += OnUserRemoved;
+
+			foreach (var member in entity.Members)
+				memberModels.Add(new UserViewModel(client, member));
 		}
 
 		void OnUserAdded(object sender, UserEventArgs e)
@@ -128,6 +131,22 @@ namespace Client.UI.ViewModel
 				NotifyPropertyChanged("DisplayName");
 			if (oldDisplayBrush != displayBrush)
 				NotifyPropertyChanged("DisplayBrush");
+		}
+
+		bool disposed = false;
+		
+		protected override void Dispose(bool disposing)
+		{
+			base.Dispose(disposing);
+
+			if (disposed)
+				return;
+			disposed = true;
+
+			if (disposing)
+			{
+				Contact.Changed -= OnContactChanged;
+			}
 		}
 	}
 }

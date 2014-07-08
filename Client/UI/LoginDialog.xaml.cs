@@ -14,23 +14,20 @@ namespace Client.UI
 	/// <summary>
 	/// Interaction logic for LoginDialog.xaml
 	/// </summary>
-	public partial class LoginDialog : MetroWindow
+	public partial class LoginDialog : MetroWindow, IView
 	{
-		private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-		private Protocol.ChatClient client;
+		static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+		Protocol.ChatClient client;
+		IViewController views;
 
-		public LoginDialog()
-		{
-			Initialize(true);
-		}
+		public LoginDialog(IViewController views)
+			: this(views, true)
+		{ }
 
-		public LoginDialog(bool isFirstRun)
+		public LoginDialog(IViewController views, bool isFirstRun)
 		{
-			Initialize(isFirstRun);
-		}
+			this.views = views;
 
-		private void Initialize(bool isFirstRun)
-		{
 			InitializeComponent();
 
 			var settings = Properties.Settings.Default;
@@ -49,10 +46,9 @@ namespace Client.UI
 
 			var matchingServer = ServerComboBox.Items.Cast<ComboBoxItem>().SingleOrDefault(item => item.Tag as string == serverName);
 			if (matchingServer != null)
-			{
-				ServerComboBox.Text = serverName;
 				ServerComboBox.SelectedItem = matchingServer;
-			}
+			else
+				ServerComboBox.Text = serverName;
 
 			if (isFirstRun && password != "")
 			{
@@ -88,6 +84,7 @@ namespace Client.UI
 				server = (ServerComboBox.SelectedItem as ComboBoxItem).Tag as string;
 
 			client = new ChatClient();
+			App.ChatClient = client;
 			App.ConnectionManager = new ConnectionManager(client);
 			if (App.ConnectionManager.Connect(server, ConnectionManager.DefaultPort, username, password))
 			{
@@ -102,10 +99,8 @@ namespace Client.UI
 
 				settings.Save();
 
-				App.Current.MainWindow = new View.MainWindowView();
-				App.Current.MainWindow.DataContext = new ViewModel.MainWindowViewModel(client, App.ConnectionManager);
-				App.Current.MainWindow.Show();
-				Close();
+				var mainView = views.CreateMainView();
+				views.Navigate(mainView);
 			}
 			else
 			{
@@ -114,6 +109,26 @@ namespace Client.UI
 		}
 
 		void CancelButtonClick(object sender, RoutedEventArgs e)
+		{
+			Close();
+		}
+
+		object IView.ViewModel
+		{
+			get { return this; }
+		}
+
+		void IView.Show()
+		{
+			Show();
+		}
+
+		bool? IView.ShowModal()
+		{
+			return ShowDialog();
+		}
+
+		void IView.Close()
 		{
 			Close();
 		}

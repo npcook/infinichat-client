@@ -24,30 +24,36 @@ namespace Client
 
 	public class Emoticon
 	{
-		public string Name;
-		public string Shortcut;
-		public Image Image;
-		public EmoticonFrame[] Frames;
+		public string Name { get; set; }
+		public string Shortcut { get; set; }
+		public Image Image { get; set; }
+		public EmoticonFrame[] Frames { get; set; }
 	}
 
 	/// <summary>
 	/// Interaction logic for App.xaml
 	/// </summary>
-	public partial class App : Application
+	public partial class App : Application, IViewController
 	{
 		static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 		static readonly Dictionary<UserStatus, SolidColorBrush> statusBrushMap = new Dictionary<UserStatus, SolidColorBrush>();
 		static readonly Dictionary<Color, SolidColorBrush> brushCache = new Dictionary<Color, SolidColorBrush>();
+		static readonly NotificationManager notificationManager = new NotificationManager();
 		Dictionary<string, Emoticon> emoticons = new Dictionary<string, Emoticon>();
-
 
 		FontOptions clientFont;
 
 		public new static App Current
 		{ get { return Application.Current as App; } }
 
+		public static ChatClient ChatClient
+		{ get; set; }
+
 		public static ConnectionManager ConnectionManager
 		{ get; set; }
+
+		public static INotificationManager NotificationManager
+		{ get { return notificationManager; } }
 
 		public event EventHandler<EventArgs> FontChanged;
 
@@ -62,6 +68,9 @@ namespace Client
 					handler(this, new EventArgs());
 			}
 		}
+
+		public ICollection<Emoticon> Emoticons
+		{ get { return emoticons.Values; } }
 
 		public App()
 		{
@@ -109,7 +118,11 @@ namespace Client
 				statusBrushMap.Add(UserStatus.Away, Resources["AwayBrush"] as SolidColorBrush);
 				statusBrushMap.Add(UserStatus.Busy, Resources["BusyBrush"] as SolidColorBrush);
 				statusBrushMap.Add(UserStatus.Offline, Resources["OfflineBrush"] as SolidColorBrush);
+				statusBrushMap.Add(UserStatus.Unknown, Resources["OfflineBrush"] as SolidColorBrush);
 			}
+
+			IViewController views = this as IViewController;
+			views.Navigate(views.CreateLoginView());
 
 			base.OnStartup(e);
 		}
@@ -123,6 +136,10 @@ namespace Client
 			settings.FontItalic = ClientFont.Style.HasFlag(Protocol.FontStyle.Italic);
 			settings.FontUnderline = ClientFont.Style.HasFlag(Protocol.FontStyle.Underline);
 			settings.Save();
+
+			NotificationManager.CloseAllNotifications();
+			if (ConnectionManager != null)
+				ConnectionManager.Disconnect();
 
 			base.OnExit(e);
 		}
@@ -245,5 +262,64 @@ namespace Client
 			catch (FileNotFoundException)
 			{ }	// Eat the exception; there's nothing we can do.
 		}
+
+		#region IViewController
+		IView currentView = null;
+
+		public IView CreateLoginView()
+		{
+			return CreateLoginView(false);
+		}
+
+		IView CreateLoginView(bool firstRun)
+		{
+			var view = new UI.LoginDialog(this, firstRun);
+			return view;
+		}
+
+		public IView CreateEmoteView()
+		{
+			var view = new UI.EmoteDialog();
+			view.Owner = MainWindow;
+			return view;
+		}
+
+		public IView CreateFontView()
+		{
+			var view = new UI.FontDialog(ClientFont);
+			view.Owner = MainWindow;
+			return view;
+		}
+
+		public IView CreateMainView()
+		{
+			var view = new UI.View.MainWindowView(new UI.ViewModel.MainWindowViewModel(this, ChatClient, ConnectionManager, Dispatcher));
+			return view;
+		}
+
+		public void Navigate(IView target)
+		{
+			var oldView = currentView;
+			if (target is UI.LoginDialog)
+			{
+				if (ConnectionManager != null)
+				{
+					ConnectionManager.Disconnect();
+					ConnectionManager.Dispose();
+				}
+				currentView = target;
+				MainWindow = target as UI.LoginDialog;
+				target.Show();
+			}
+			else if (target is UI.View.MainWindowView)
+			{
+				currentView = target;
+				MainWindow = target as UI.View.MainWindowView;
+				target.Show();
+			}
+			if (oldView != null)
+				oldView.Close();
+		}
+		#endregion
 	}
 }

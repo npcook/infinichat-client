@@ -51,12 +51,12 @@
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationUI, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\MahApps.Metro.0.13.1.0\lib\net45\System.Windows.Interactivity.dll</HintPath>
     </Reference>
@@ -71,7 +71,6 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -81,11 +80,16 @@
     <Compile Include="ConnectionManager.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="NativeMethods.cs" />
+    <Compile Include="NotificationManager.cs" />
     <Compile Include="UI\ConnectionDialog.xaml.cs">
       <DependentUpon>ConnectionDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\EmoteDialog.xaml.cs">
+      <DependentUpon>EmoteDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\EmoteImage.cs" />
     <Compile Include="UI\ViewModel\BaseViewModel.cs" />
+    <Compile Include="UI\ViewModel\CloseableViewModel.cs" />
     <Compile Include="UI\ViewModel\ContactViewModel.cs" />
     <Compile Include="UI\ChatTabItem.cs" />
     <Compile Include="UI\ViewModel\ConversationViewModel.cs" />
@@ -97,6 +101,7 @@
       <DependentUpon>MenuButton.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\ViewModel\NewTabViewModel.cs" />
+    <Compile Include="UI\ViewModel\NotificationViewModel.cs" />
     <Compile Include="UI\View\ConversationView.xaml.cs">
       <DependentUpon>ConversationView.xaml</DependentUpon>
     </Compile>
@@ -107,6 +112,9 @@
       <DependentUpon>NewTabView.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\RelayCommand.cs" />
+    <Compile Include="UI\View\NotificationView.xaml.cs">
+      <DependentUpon>NotificationView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserStateDetector.cs" />
     <Compile Include="ViewController.cs" />
     <Page Include="Themes\Generic.xaml">
@@ -114,6 +122,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="UI\ConnectionDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\EmoteDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -145,6 +157,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UI\View\NewTabView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\View\NotificationView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -11,7 +11,7 @@ namespace Client.UI
 	/// <summary>
 	/// Interaction logic for FontDialog.xaml
 	/// </summary>
-	public partial class FontDialog : MetroWindow
+	public partial class FontDialog : MetroWindow, IView
 	{
 		private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -179,6 +179,26 @@ namespace Client.UI
 					break;
 				}
 			}
+		}
+
+		object IView.ViewModel
+		{
+			get { return this; }
+		}
+
+		void IView.Show()
+		{
+			Show();
+		}
+
+		bool? IView.ShowModal()
+		{
+			return ShowDialog();
+		}
+
+		void IView.Close()
+		{
+			Close();
 		}
 	}
 }

@@ -36,13 +36,21 @@ namespace Client.UI.View
 	/// <summary>
 	/// Interaction logic for MainWindowView.xaml
 	/// </summary>
-	public partial class MainWindowView : MetroWindow
+	public partial class MainWindowView : MetroWindow, IView
 	{
 		public static readonly RoutedUICommand ChatTabClose = new RoutedUICommand("Close Tab", "ChatTabClose", typeof(MainWindowView));
 
-		public MainWindowView()
+		public MainWindowView(ViewModel.MainWindowViewModel vm)
 		{
 			InitializeComponent();
+
+			DataContext = vm;
+
+			PreviewKeyDown += (sender, e) =>
+				{
+					if (e.Key == Key.F5)
+						System.Diagnostics.Debugger.Break();
+				};
 		}
 
 		protected override void OnClosed(EventArgs e)
@@ -50,11 +58,6 @@ namespace Client.UI.View
 			(DataContext as ViewModel.MainWindowViewModel).Dispose();
 
 			base.OnClosed(e);
-		}
-
-		private void ChatTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
-		{
-
 		}
 
 		private void CommandBinding_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -65,6 +68,26 @@ namespace Client.UI.View
 		private void CommandBinding_CanExecute(object sender, CanExecuteRoutedEventArgs e)
 		{
 			e.CanExecute = (DataContext as ViewModel.MainWindowViewModel).CloseChatCommand.CanExecute(e.Parameter);
+		}
+
+		object IView.ViewModel
+		{
+			get { return DataContext; }
+		}
+
+		void IView.Show()
+		{
+			Show();
+		}
+
+		bool? IView.ShowModal()
+		{
+			return ShowDialog();
+		}
+
+		void IView.Close()
+		{
+			Close();
 		}
 	}
 }

@@ -1,11 +1,7 @@
 ﻿using Client.Protocol;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Documents;
@@ -14,7 +10,7 @@ using System.Windows.Media;
 
 namespace Client.UI.ViewModel
 {
-	class ConversationViewModel : BaseViewModel
+	class ConversationViewModel : CloseableViewModel
 	{
 		ChatClient client;
 		ObservableCollection<UserViewModel> participants = new ObservableCollection<UserViewModel>();
@@ -24,6 +20,9 @@ namespace Client.UI.ViewModel
 		RelayCommand sendChatCommand;
 		FontOptions font;
 		bool isHighlighted;
+
+		public ContactViewModel Contact
+		{ get; private set; }
 
 		public Conversation Conversation
 		{ get; private set; }
@@ -121,7 +120,7 @@ namespace Client.UI.ViewModel
 
 			ChatHistory = new FlowDocument();
 			ChatHistory.Background = Brushes.White;
-			ChatHistory.PagePadding = new Thickness(0);
+			ChatHistory.PagePadding = new Thickness(4);
 			ChatHistory.FontFamily = new FontFamily("Segoe UI");
 			ChatHistory.FontSize = new FontSizeConverter().ConvertFromString("10pt") as double? ?? 0;
 
@@ -150,6 +149,11 @@ namespace Client.UI.ViewModel
 		{
 			if (Conversation != null)
 			{
+				typingParticipants.Clear();
+				foreach (var participant in participants)
+					participant.Dispose();
+				participants.Clear();
+
 				Conversation.Contact.Changed -= Contact_Changed;
 				Conversation.UserAdded -= Conversation_UserAdded;
 				Conversation.UserChanged -= Conversation_UserChanged;
@@ -157,22 +161,28 @@ namespace Client.UI.ViewModel
 				Conversation.ChatReceived -= Conversation_ChatReceived;
 				Conversation.UserTyping -= Conversation_UserTyping;
 				Conversation.Ended -= Conversation_Ended;
+
+				Contact = null;
 			}
 
 			Conversation = convo;
 
-			Conversation.Contact.Changed += Contact_Changed;
-			Conversation.UserAdded += Conversation_UserAdded;
-			Conversation.UserChanged += Conversation_UserChanged;
-			Conversation.UserRemoved += Conversation_UserRemoved;
-			Conversation.ChatReceived += Conversation_ChatReceived;
-			Conversation.UserTyping += Conversation_UserTyping;
-			Conversation.Ended += Conversation_Ended;
+			if (Conversation != null)
+			{
+				Conversation.Contact.Changed += Contact_Changed;
+				Conversation.UserAdded += Conversation_UserAdded;
+				Conversation.UserChanged += Conversation_UserChanged;
+				Conversation.UserRemoved += Conversation_UserRemoved;
+				Conversation.ChatReceived += Conversation_ChatReceived;
+				Conversation.UserTyping += Conversation_UserTyping;
+				Conversation.Ended += Conversation_Ended;
 
-			participants.Clear();
-			foreach (var participant in Conversation.Participants)
-				participants.Add(new UserViewModel(client, participant.User));
-			typingParticipants.Clear();
+				foreach (var participant in Conversation.Participants)
+					participants.Add(new UserViewModel(client, participant.User));
+
+				Contact = ContactViewModel.Create(client, Conversation.Contact);
+			}
+			NotifyPropertyChanged("Contact");
 		}
 
 		void Conversation_UserChanged(object sender, UserEventArgs e)
@@ -219,9 +229,13 @@ namespace Client.UI.ViewModel
 					lastSender = sender;
 					paragraph = new Paragraph()
 					{
-						Foreground = Brushes.DarkBlue,
-						FontSize = ChatHistory.FontSize + 1,
-						Margin = new Thickness(0, 4.0, 0, 0),
+						Foreground = Brushes.Black,
+						FontSize = ChatHistory.FontSize + 2,
+						FontWeight = FontWeights.Light,
+						Margin = new Thickness(0, 4.0, 0, 2.0),
+						Padding = new Thickness(0, 0, 0, 2.0),
+						BorderBrush = Brushes.LightGray,
+						BorderThickness = new Thickness(0, 0, 0, 1),
 					};
 					paragraph.Inlines.Add(new Run(sender.DisplayName));
 					ChatHistory.Blocks.Add(paragraph);
@@ -229,25 +243,31 @@ namespace Client.UI.ViewModel
 
 				paragraph = new Paragraph()
 				{
-					FontFamily = new FontFamily(font.Family + ",Segoe UI"),
+					FontFamily = new FontFamily(font.Family),
 					Foreground = brush,
 					LineHeight = 3 * ChatHistory.FontSize / 2,
 					Margin = new Thickness(16.0, 0, 0, 0),
+					TextIndent = 0,
 				};
+
+/*				var path = new System.Windows.Shapes.Path()
+				{
+					Stroke = Brushes.Black,
+					StrokeThickness = 2,
+					Data = App.Current.FindResource("CrossGeometry") as Geometry,
+					Width = 12,
+					Height = paragraph.FontSize,
+					Margin = new Thickness(0, 0, 4, 0),
+				};
+
+				paragraph.Inlines.Add(new InlineUIContainer(path));*/
+
 				var indexList = App.Current.SearchForEmoticons(message);
 
 				int startIndex = 0;
 				for (int i = 0; i < indexList.Count; ++i)
 				{
 					paragraph.Inlines.Add(new Run(message.Substring(startIndex, indexList[i].Key - startIndex)));
-
-/*					var picture = new System.Windows.Forms.PictureBox();
-					picture.Image = indexList[i].Value.Image;
-
-					var host = new System.Windows.Forms.Integration.WindowsFormsHost();
-					host.Child = picture;
-
-					paragraph.Inlines.Add(new InlineUIContainer(host));*/
 
 					var picture = new EmoteImage();
 					picture.Emote = indexList[i].Value;
@@ -274,12 +294,33 @@ namespace Client.UI.ViewModel
 
 		void Conversation_UserRemoved(object sender, UserEventArgs e)
 		{
+			var participant = participants.Single(vm => vm.Contact == e.User);
 			participants.Remove(participants.Single(vm => vm.Contact == e.User));
+			typingParticipants.Remove(participant);
+			participant.Dispose();
 		}
 
 		void Conversation_UserAdded(object sender, UserEventArgs e)
 		{
 			participants.Add(new UserViewModel(client, e.User));
+		}
+
+		bool disposed = false;
+
+		protected override void Dispose(bool disposing)
+		{
+			base.Dispose(disposing);
+
+			if (disposed)
+				return;
+			disposed = true;
+
+			if (disposing)
+			{
+				App.Current.FontChanged -= OnFontChanged;
+
+				SetConversation(null);
+			}
 		}
 	}
 }

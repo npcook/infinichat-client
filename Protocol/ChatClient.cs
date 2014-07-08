@@ -316,6 +316,16 @@ namespace Client.Protocol
 		{
 			protocol.StopProcessing();
 
+			foreach (var friend in friends.Values)
+			{
+				friend.Dispose();
+			}
+
+			foreach (var group in groups.Values)
+			{
+				group.Dispose();
+			}
+
 			friends.Clear();
 			groups.Clear();
 			userCache.Clear();
@@ -618,6 +628,12 @@ namespace Client.Protocol
 			VerifyConnected();
 			if (!loggedIn)
 				throw new InvalidOperationException("Client must be successfully logged-in first");
+		}
+
+		[System.Diagnostics.Conditional("DEBUG")]
+		public void SpoofReceieveMessage(JObject message)
+		{
+			HandleMessage(protocol, new MessageEventArgs(message));
 		}
 	}
 }

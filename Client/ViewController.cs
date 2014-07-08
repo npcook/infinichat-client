@@ -6,12 +6,24 @@ using System.Threading.Tasks;
 
 namespace Client
 {
-	public interface IViewController
+	public interface IView
 	{
+		object ViewModel
+		{ get; }
 
+		void Show();
+		bool? ShowModal();
+
+		void Close();
 	}
 
-	class ViewController
+	public interface IViewController
 	{
+		IView CreateLoginView();
+		IView CreateEmoteView();
+		IView CreateFontView();
+		IView CreateMainView();
+
+		void Navigate(IView target);
 	}
 }

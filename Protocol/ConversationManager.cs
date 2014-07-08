@@ -9,10 +9,12 @@ namespace Client.Protocol
 	public class NewConversationEventArgs : EventArgs
 	{
 		public readonly Conversation Conversation;
+		public readonly bool ClientStarted;
 
-		public NewConversationEventArgs(Conversation convo)
+		public NewConversationEventArgs(Conversation convo, bool clientStarted)
 		{
 			Conversation = convo;
+			ClientStarted = clientStarted;
 		}
 	}
 
@@ -47,7 +49,7 @@ namespace Client.Protocol
 
 			if (!conversationEventsMap.ContainsKey(e.User.Name))
 			{
-				CreateConversation(e.User);
+				CreateConversation(e.User, false);
 			}
 
 			conversationEventsMap[e.User.Name].RaiseChatReceived(_e);
@@ -59,7 +61,7 @@ namespace Client.Protocol
 
 			if (!conversationEventsMap.ContainsKey(e.Group.Name))
 			{
-				CreateConversation(e.Group);
+				CreateConversation(e.Group, false);
 			}
 
 			conversationEventsMap[e.Group.Name].RaiseChatReceived(_e);
@@ -102,6 +104,11 @@ namespace Client.Protocol
 
 		public Conversation CreateConversation(IContact who)
 		{
+			return CreateConversation(who, true);
+		}
+
+		Conversation CreateConversation(IContact who, bool clientStarted)
+		{
 			Conversation convo;
 			var events = new ConversationEvents();
 			if (who is User)
@@ -114,7 +121,7 @@ namespace Client.Protocol
 			conversations.Add(convo);
 			conversationEventsMap[who.Name] = events;
 
-			NewConversation.SafeInvoke(this, new NewConversationEventArgs(convo));
+			NewConversation.SafeInvoke(this, new NewConversationEventArgs(convo, clientStarted));
 
 			return convo;
 		}

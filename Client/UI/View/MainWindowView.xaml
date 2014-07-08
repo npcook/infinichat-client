@@ -6,16 +6,9 @@
 		xmlns:view="clr-namespace:Client.UI.View"
 		xmlns:viewmodel="clr-namespace:Client.UI.ViewModel"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="Client.UI.View.MainWindowView"
-		Title="Infinichat" Height="450" MinHeight="400" Width="500" MinWidth="450" SaveWindowPosition="True" Background="{StaticResource BackgroundBrush}" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="1" d:DataContext="{d:DesignInstance {x:Type viewmodel:MainWindowViewModel}}">
+		Title="Infinichat" Icon="/Client;component/Resources/Infinity.ico" Height="450" MinHeight="400" Width="500" MinWidth="450" SaveWindowPosition="True" Background="{StaticResource BackgroundBrush}" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="1" d:DataContext="{d:DesignInstance {x:Type viewmodel:MainWindowViewModel}}">
 	<Controls:MetroWindow.Resources>
 		<ResourceDictionary>
-			<ResourceDictionary.MergedDictionaries>
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml" />
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Blue.xaml" />
-				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseLight.xaml" />
-			</ResourceDictionary.MergedDictionaries>
 			<DataTemplate x:Key="HomeHeaderTemplate">
 				<TextBlock Text="⌂"/>
 			</DataTemplate>
@@ -29,14 +22,13 @@
 							<Style TargetType="{x:Type TextBlock}">
 								<Style.Triggers>
 									<DataTrigger Binding="{Binding IsHighlighted}" Value="True">
-										<Setter Property="Foreground" Value="{DynamicResource AccentColorBrush}"/>
+										<Setter Property="Foreground" Value="{DynamicResource HighlightBrush}"/>
 									</DataTrigger>
 								</Style.Triggers>
 							</Style>
 						</TextBlock.Style>
 					</TextBlock>
-					<Button x:Name="CloseButton" Command="view:MainWindowView.ChatTabClose" CommandParameter="{Binding }" Style="{DynamicResource TabCloseButtonStyle}">
-					</Button>
+					<Button Command="{Binding CloseCommand}" Style="{DynamicResource TabCloseButtonStyle}"/>
 				</StackPanel>
 			</DataTemplate>
 			<DataTemplate x:Key="ChatContentTemplate">
@@ -59,13 +51,14 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="5"/>
 		</Grid.RowDefinitions>
-		<TabControl x:Name="ChatTabs" SelectedIndex="0" ItemsSource="{Binding OpenTabsView}" ItemTemplateSelector="{StaticResource TabHeaderSelector}" ContentTemplateSelector="{StaticResource TabContentSelector}" SelectionChanged="ChatTabs_SelectionChanged" BorderThickness="0,1,0,0" Padding="5" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2"/>
+		<TabControl x:Name="ChatTabs" SelectedIndex="0" ItemsSource="{Binding OpenTabsView}" ItemTemplateSelector="{StaticResource TabHeaderSelector}" ContentTemplateSelector="{StaticResource TabContentSelector}" Padding="5" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2"/>
 		<DockPanel Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1">
 			<ui:MenuButton x:Name="ClientNameButton" Width="Auto" Height="Auto" VerticalAlignment="Center" VerticalContentAlignment="Center" DockPanel.Dock="Left">
 				<ui:MenuButton.ContextMenu>
 					<ContextMenu>
 						<MenuItem Header="Change _Name..." IsEnabled="False" Command="{Binding ChangeNameCommand}"/>
 						<MenuItem Header="Change _Font..." Command="{Binding ChangeFontCommand}"/>
+						<MenuItem Header="View _Emoticons" Command="{Binding ViewEmotesCommand}"/>
 						<Separator/>
 						<MenuItem Header="_Logout" Command="{Binding LogoutCommand}"/>
 						<MenuItem Header="_Quit" Command="{Binding QuitCommand}"/>
@@ -85,6 +78,6 @@
 				<TextBlock Padding="5" FontSize="22" FontWeight="Light" Text="{Binding Me.Status}" Foreground="{Binding Me.DisplayBrush}" />
 			</ui:MenuButton>
 		</DockPanel>
-		<Border x:Name="ClientStatusBorder" Background="{Binding Me.DisplayBrush}" Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="2"/>
+		<Border Background="{Binding Me.DisplayBrush}" Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="2"/>
 	</Grid>
 </Controls:MetroWindow>

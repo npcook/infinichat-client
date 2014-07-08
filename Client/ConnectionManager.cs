@@ -183,18 +183,32 @@ namespace Client
 
 		public void Disconnect()
 		{
-			netClient.Close();
+			client.Disconnect();
+
+			if (netClient != null)
+				netClient.Close();
 			netClient = null;
 		}
 
 		public void Dispose()
 		{
+			GC.SuppressFinalize(this);
+			Dispose(true);
+		}
+		
+		protected void Dispose(bool disposing)
+		{
 			if (disposed)
 				return;
 			disposed = true;
 
-			netClient.Close();
-			connectDone.Close();
+			if (disposing)
+			{
+				Disconnect();
+
+				if (connectDone != null)
+					connectDone.Close();
+			}
 		}
 	}
 }

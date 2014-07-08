@@ -1,0 +1,32 @@
+﻿<Controls:MetroWindow
+	x:Class="Client.UI.EmoteDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:ui="clr-namespace:Client.UI"
+	xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    Title="Emotes" Height="300" Width="300" Background="{StaticResource BackgroundBrush}"
+	Icon="/Client;component/Resources/Infinity.ico" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="1"
+	WindowStartupLocation="CenterOwner">
+	<Controls:MetroWindow.Resources>
+		<ResourceDictionary>
+			<DataTemplate x:Key="EmoteTemplate">
+				<StackPanel Orientation="Vertical" Margin="5">
+					<TextBlock Text="{Binding Name}" FontWeight="Light" FontSize="13" HorizontalAlignment="Center" />
+					<ui:EmoteImage Emote="{Binding }" />
+					<TextBlock Text="{Binding Shortcut}" HorizontalAlignment="Center"/>
+				</StackPanel>
+			</DataTemplate>
+		</ResourceDictionary>
+	</Controls:MetroWindow.Resources>
+	<Grid>
+		<TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Available Emotes:" VerticalAlignment="Top"/>
+		<ListView x:Name="EmoteListBox" Margin="10,31,10,40" ItemTemplate="{StaticResource EmoteTemplate}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+			<ListView.ItemsPanel>
+				<ItemsPanelTemplate>
+					<WrapPanel MinWidth="70" MinHeight="70"/>
+				</ItemsPanelTemplate>
+			</ListView.ItemsPanel>
+		</ListView>
+		<Button Content="Close" Margin="0,0,10,10" Click="OnQuitClick" Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="75"/>
+	</Grid>
+</Controls:MetroWindow>

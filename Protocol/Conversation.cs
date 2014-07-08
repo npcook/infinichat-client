@@ -50,6 +50,18 @@ namespace Client.Protocol
 			events.UserRemoved += OnUserRemoved;
 			events.UserTyping += OnUserTyping;
 			events.ChatReceived += OnChatReceived;
+
+			if (Contact is IUser)
+			{
+				participants.Add(new Participant(Contact as IUser));
+			}
+			else
+			{
+				foreach (var member in (Contact as IGroup).Members)
+				{
+					participants.Add(new Participant(member));
+				}
+			}
 		}
 
 		void OnUserAdded(object sender, UserEventArgs e)
