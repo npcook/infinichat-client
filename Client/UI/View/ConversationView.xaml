@@ -9,6 +9,7 @@
 			 mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300" d:DataContext="{d:DesignInstance {x:Type ViewModel:ConversationViewModel}}">
 	<UserControl.Resources>
 		<ResourceDictionary>
+			<view:UserToCommaSeparatedConverter x:Key="UserToCommaSeparatedConverter"/>
 			<view:ContactTemplateSelector x:Key="ContactSelector" UserTemplate="{StaticResource UserPanelTemplate}" GroupTemplate="{StaticResource GroupPanelTemplate}"/>
 		</ResourceDictionary>
 	</UserControl.Resources>
@@ -24,7 +25,31 @@
 			<RowDefinition Height="44" MinHeight="44" MaxHeight="150"/>
 		</Grid.RowDefinitions>
 
-		<FlowDocumentScrollViewer x:Name="ChatHistory" Zoom="100" MinZoom="100" MaxZoom="100" Document="{Binding ChatHistory}" FontSize="10pt" Grid.Column="2" Grid.Row="0" Margin="10,0,0,0" TextInput="OnHistoryTextInput"/>
+		<DockPanel Grid.Column="2" Grid.Row="0">
+			<StackPanel Orientation="Horizontal" Visibility="Collapsed" Margin="10,0,0,0" DockPanel.Dock="Bottom">
+				<TextBlock Text="{Binding TypingParticipants, Converter={StaticResource UserToCommaSeparatedConverter}}" Margin="5,5,0,5"/>
+				<TextBlock Margin="0,5,5,5">
+					<TextBlock.Style>
+						<Style TargetType="TextBlock">
+							<Style.Triggers>
+								<DataTrigger Binding="{Binding TypingParticipants.Count}" Value="0">
+									<Setter Property="Visibility" Value="Collapsed"/>
+								</DataTrigger>
+								<DataTrigger Binding="{Binding TypingParticipants.Count}" Value="1">
+									<Setter Property="Text" Value=" is typing"/>
+								</DataTrigger>
+								<DataTrigger Binding="{Binding TypingParticipants.Count}" Value="2">
+									<Setter Property="Text" Value=" are typing"/>
+								</DataTrigger>
+							</Style.Triggers>
+						</Style>
+					</TextBlock.Style>
+				</TextBlock>
+			</StackPanel>
+			<view:HistoryDocumentViewer x:Name="ChatHistory" Zoom="100" MinZoom="100" MaxZoom="100" FontSize="10pt" Margin="10,0,0,0" TextInput="OnHistoryTextInput" DockPanel.Dock="Top" ScrollViewer.VerticalScrollBarVisibility="Auto">
+				<FlowDocument x:Name="HistoryDocument" Background="White" FontFamily="Segoe UI" PagePadding="4"/>
+			</view:HistoryDocumentViewer>
+		</DockPanel>
 		<GridSplitter Height="5" Background="{StaticResource BackgroundBrush}" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" Focusable="False" Grid.Column="2" Grid.Row="1"/>
 		<TextBox x:Name="ChatInput" Text="{Binding CurrentMessage, UpdateSourceTrigger=PropertyChanged}" FontFamily="{Binding FontFamily}" FontWeight="{Binding FontWeight}" FontStyle="{Binding FontStyle}" TextDecorations="{Binding TextDecorations}" VerticalAlignment="Stretch" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Grid.Column="2" Grid.Row="2" Margin="10,0,0,0">
 			<TextBox.Foreground>

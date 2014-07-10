@@ -108,9 +108,6 @@ namespace Client.UI.ViewModel
 
 			client.ListFriends();
 			client.ListGroups();
-
-			var temp = Newtonsoft.Json.Linq.JObject.Parse("{\"message\":\"detail.groups\",\"groups\":[{\"groupname\":\"cocaff\",\"display_name\":\"PERU #1 :D\",\"members\":[\"mmbob\",\"crash\"],\"member\":true}]}");
-			client.SpoofReceieveMessage(temp);
 		}
 
 		void OnCurrentTabChanged(object sender, EventArgs e)
@@ -179,7 +176,7 @@ namespace Client.UI.ViewModel
 				var convoVM = new ConversationViewModel(client, e.Conversation);
 				convoVM.CloseRequested += OnConversationCloseRequested;
 				openTabs.Add(convoVM);
-				e.Conversation.ChatReceived += (_sender, _e) =>
+				e.Conversation.NewMessage += (_sender, _e) =>
 					{
 						SignalTab(convoVM);
 					};

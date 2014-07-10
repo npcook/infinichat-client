@@ -14,18 +14,7 @@ namespace Client.UI
 		public static readonly DependencyProperty FrameIndexProperty = DependencyProperty.Register("FrameIndex", typeof(int), typeof(EmoteImage),
 			new PropertyMetadata(-1, OnFrameIndexChanged));
 
-		static readonly System.Threading.Thread processingThread = new System.Threading.Thread(ProcessImages)
-		{
-			IsBackground = true,
-			Name = "EmoteImage Processing",
-		};
-
-		static void ProcessImages(object obj)
-		{
-			throw new NotImplementedException();
-		}
-
-		Timer frameTimer = new Timer();
+		Timer frameTimer;
 
 		public Emoticon Emote
 		{
@@ -40,9 +29,7 @@ namespace Client.UI
 		}
 
 		public EmoteImage()
-		{
-			frameTimer.Elapsed += OnTimerElapsed;
-		}
+		{ }
 
 		void OnTimerElapsed(object sender, ElapsedEventArgs e)
 		{
@@ -55,12 +42,25 @@ namespace Client.UI
 
 		void OnEmoteChanged(Emoticon source)
 		{
+			if (frameTimer != null)
+			{
+				frameTimer.Elapsed -= OnTimerElapsed;
+				frameTimer.Stop();
+				frameTimer.Dispose();
+				frameTimer = null;
+			}
+
 			Width = source.Image.Width;
 			Height = source.Image.Height;
 
 			FrameIndex = 0;
-			frameTimer.Interval = Emote.Frames[0].Delay;
-			frameTimer.Start();
+
+			if (source.Frames.Length > 1)
+			{
+				frameTimer = new Timer(Emote.Frames[0].Delay);
+				frameTimer.Elapsed += OnTimerElapsed;
+				frameTimer.Start();
+			}
 		}
 
 		void OnFrameIndexChanged(int index)

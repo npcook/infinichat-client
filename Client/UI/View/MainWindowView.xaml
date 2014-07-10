@@ -9,15 +9,15 @@
 		Title="Infinichat" Icon="/Client;component/Resources/Infinity.ico" Height="450" MinHeight="400" Width="500" MinWidth="450" SaveWindowPosition="True" Background="{StaticResource BackgroundBrush}" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="1" d:DataContext="{d:DesignInstance {x:Type viewmodel:MainWindowViewModel}}">
 	<Controls:MetroWindow.Resources>
 		<ResourceDictionary>
-			<DataTemplate x:Key="HomeHeaderTemplate">
+			<DataTemplate x:Key="HomeHeaderTemplate" DataType="{x:Type viewmodel:NewTabViewModel}">
 				<TextBlock Text="⌂"/>
 			</DataTemplate>
-			<DataTemplate x:Key="HomeContentTemplate">
+			<DataTemplate x:Key="HomeContentTemplate" DataType="{x:Type viewmodel:NewTabViewModel}">
 				<view:NewTabView DataContext="{Binding }"/>
 			</DataTemplate>
-			<DataTemplate x:Key="ChatHeaderTemplate">
+			<DataTemplate x:Key="ChatHeaderTemplate" DataType="{x:Type viewmodel:ConversationViewModel}">
 				<StackPanel Orientation="Horizontal">
-					<TextBlock x:Name="TitleText" Text="{Binding Title}">
+					<TextBlock Text="{Binding Title}">
 						<TextBlock.Style>
 							<Style TargetType="{x:Type TextBlock}">
 								<Style.Triggers>
@@ -31,7 +31,7 @@
 					<Button Command="{Binding CloseCommand}" Style="{DynamicResource TabCloseButtonStyle}"/>
 				</StackPanel>
 			</DataTemplate>
-			<DataTemplate x:Key="ChatContentTemplate">
+			<DataTemplate x:Key="ChatContentTemplate" DataType="{x:Type viewmodel:ConversationViewModel}">
 				<view:ConversationView DataContext="{Binding }"/>
 			</DataTemplate>
 			<view:TabTemplateSelector x:Key="TabHeaderSelector" NewTabTemplate="{StaticResource HomeHeaderTemplate}" ChatTabTemplate="{StaticResource ChatHeaderTemplate}" />

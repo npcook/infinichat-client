@@ -18,19 +18,6 @@
 				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Blue.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseLight.xaml" />
 			</ResourceDictionary.MergedDictionaries>
-			<DataTemplate x:Key="UserTemplate" DataType="{x:Type ViewModel:UserViewModel}">
-				<StackPanel Orientation="Horizontal">
-					<Rectangle Fill="{Binding DisplayBrush}" Width="{Binding ElementName=NameText, Path=FontSize}" Height="{Binding ElementName=NameText, Path=FontSize}" Margin="0,0,5,0" Stroke="White"/>
-					<TextBlock x:Name="NameText" Text="{Binding DisplayName}" FontSize="14" VerticalAlignment="Center"/>
-				</StackPanel>
-			</DataTemplate>
-			<DataTemplate x:Key="GroupTemplate" DataType="{x:Type ViewModel:GroupViewModel}">
-				<StackPanel Orientation="Horizontal">
-					<Rectangle Fill="Transparent" Width="{Binding ElementName=NameText, Path=FontSize}" Height="{Binding ElementName=NameText, Path=FontSize}" Margin="0,0,5,0" Stroke="White"/>
-					<TextBlock x:Name="NameText" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
-				</StackPanel>
-			</DataTemplate>
-			<view:ContactTemplateSelector x:Key="FriendsTemplateSelector" UserTemplate="{StaticResource UserTemplate}" GroupTemplate="{StaticResource GroupTemplate}"/>
 		</ResourceDictionary>
 	</UserControl.Resources>
 	<DockPanel>
@@ -44,6 +31,6 @@
 				<view:ContactTemplateSelector UserTemplate="{StaticResource UserPanelTemplate}" GroupTemplate="{StaticResource GroupPanelTemplate}"/>
 			</ContentControl.ContentTemplateSelector>
 		</ContentControl>
-		<ListBox x:Name="FriendListBox" ItemsSource="{Binding ContactsView}" ItemTemplateSelector="{StaticResource FriendsTemplateSelector}" SelectedIndex="-1" MouseDoubleClick="FriendListBoxDoubleClick" Background="Transparent" BorderThickness="0" DockPanel.Dock="Left" />
+		<ListBox x:Name="FriendListBox" ItemsSource="{Binding ContactsView}" ItemTemplate="{StaticResource ContactListTemplate}" SelectedIndex="-1" MouseDoubleClick="FriendListBoxDoubleClick" Background="Transparent" BorderThickness="0" DockPanel.Dock="Left" />
 	</DockPanel>
 </UserControl>

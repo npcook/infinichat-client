@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -39,6 +40,7 @@ namespace Client
 		static readonly Dictionary<UserStatus, SolidColorBrush> statusBrushMap = new Dictionary<UserStatus, SolidColorBrush>();
 		static readonly Dictionary<Color, SolidColorBrush> brushCache = new Dictionary<Color, SolidColorBrush>();
 		static readonly NotificationManager notificationManager = new NotificationManager();
+		static readonly EmoticonManager emoticonManager = new EmoticonManager();
 		Dictionary<string, Emoticon> emoticons = new Dictionary<string, Emoticon>();
 
 		FontOptions clientFont;
@@ -54,6 +56,9 @@ namespace Client
 
 		public static INotificationManager NotificationManager
 		{ get { return notificationManager; } }
+
+		public static EmoticonManager EmoticonManager
+		{ get { return emoticonManager; } }
 
 		public event EventHandler<EventArgs> FontChanged;
 
@@ -90,7 +95,7 @@ namespace Client
 		{
 			log.Info("========= Application Startup =========");
 
-			LoadEmoticons();
+			emoticonManager.LoadEmoticons();
 
 			string DefaultFontFamily = "Segoe UI";
 			Color DefaultFontColor = Colors.Black;
@@ -161,106 +166,6 @@ namespace Client
 			}
 
 			return brush;
-		}
-
-		public List<KeyValuePair<int, Emoticon>> SearchForEmoticons(string text)
-		{
-			// Eventually, use Aho-Corasicks string searching method
-			var emoteList = new List<KeyValuePair<int, Emoticon>>();
-
-			foreach (var emote in emoticons.Values)
-			{
-				int index = text.IndexOf(emote.Shortcut);
-				while (index != -1)
-				{
-					emoteList.Add(new KeyValuePair<int, Emoticon>(index, emote));
-
-					index = text.IndexOf(emote.Shortcut, index + emote.Shortcut.Length);
-				}
-			}
-
-			return new List<KeyValuePair<int, Emoticon>>(emoteList.OrderBy(_ => _.Key));
-		}
-
-		public Emoticon GetEmoticon(string shortcut)
-		{
-			Emoticon emote;
-			if (emoticons.TryGetValue(shortcut, out emote))
-				return emote;
-			return null;
-		}
-
-		void LoadEmoticons()
-		{
-			emoticons.Clear();
-
-			try
-			{
-				using (var archive = ZipFile.OpenRead("Emotes.zip"))
-				{
-					var entry = archive.GetEntry("index.xml");
-					if (entry == null)
-						return;
-
-					using (var archiveStream = entry.Open())
-					{
-						var document = new XmlDocument();
-						document.Load(archiveStream);
-
-						foreach (var element in document.SelectNodes("/Emotes/Emote").Cast<XmlNode>())
-						{
-							var _name = element.Attributes["Name"];
-							var _shortcut = element.Attributes["Shortcut"];
-							var _imagePath = element.Attributes["ImagePath"];
-							if (_name != null && _shortcut != null && _imagePath != null)
-							{
-								var emote = new Emoticon();
-								emote.Name = _name.Value;
-
-								if (!emoticons.ContainsKey(emote.Name))
-								{
-									emote.Shortcut = _shortcut.Value;
-									var image = Image.FromStream(archive.GetEntry(_imagePath.Value).Open());
-									emote.Image = image;
-
-									const int PropertyTagFrameDelay = 0x5100;
-									using (var memory = new MemoryStream())
-									{
-										int frameCount = image.GetFrameCount(FrameDimension.Time);
-										emote.Frames = new EmoticonFrame[frameCount];
-										for (int i = 0; i < frameCount; ++i)
-										{
-											emote.Frames[i] = new EmoticonFrame();
-											memory.Position = 0;
-											image.SelectActiveFrame(FrameDimension.Time, i);
-											image.Save(memory, ImageFormat.Gif);
-											memory.Position = 0;
-
-											int delay = 10 * BitConverter.ToInt32(image.GetPropertyItem(PropertyTagFrameDelay).Value, 0);
-											if (delay == 0)
-												delay = 100;
-											emote.Frames[i].Delay = delay;
-
-											var frameImage = new BitmapImage();
-											frameImage.BeginInit();
-											frameImage.StreamSource = memory;
-											frameImage.CacheOption = BitmapCacheOption.OnLoad;
-											frameImage.EndInit();
-											frameImage.Freeze();
-
-											emote.Frames[i].Image = frameImage;
-										}
-									}
-
-									emoticons[emote.Shortcut] = emote;
-								}
-							}
-						}
-					}
-				}
-			}
-			catch (FileNotFoundException)
-			{ }	// Eat the exception; there's nothing we can do.
 		}
 
 		#region IViewController

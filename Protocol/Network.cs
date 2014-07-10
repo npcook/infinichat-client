@@ -104,7 +104,11 @@ namespace Client.Protocol
 		public void StartProcessing()
 		{
 			stop = false;
-			new Thread(ReadFromSource).Start();
+			new Thread(ReadFromSource)
+			{
+				Name = "Chat Network Processing",
+				IsBackground = true,
+			}.Start();
 		}
 
 		public void StopProcessing()

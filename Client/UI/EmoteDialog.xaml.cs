@@ -11,7 +11,7 @@ namespace Client.UI
 		{
 			InitializeComponent();
 
-			foreach (var emote in App.Current.Emoticons)
+			foreach (var emote in App.EmoticonManager.Emoticons)
 				EmoteListBox.Items.Add(emote);
 		}
 

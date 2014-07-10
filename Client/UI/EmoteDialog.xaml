@@ -12,7 +12,7 @@
 			<DataTemplate x:Key="EmoteTemplate">
 				<StackPanel Orientation="Vertical" Margin="5">
 					<TextBlock Text="{Binding Name}" FontWeight="Light" FontSize="13" HorizontalAlignment="Center" />
-					<ui:EmoteImage Emote="{Binding }" />
+					<ui:EmoteImage Emote="{Binding }" SnapsToDevicePixels="True" />
 					<TextBlock Text="{Binding Shortcut}" HorizontalAlignment="Center"/>
 				</StackPanel>
 			</DataTemplate>

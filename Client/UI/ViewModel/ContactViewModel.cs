@@ -8,10 +8,22 @@ namespace Client.UI.ViewModel
 {
 	public class UserViewModel : ContactViewModel
 	{
-		string status;
-
 		public IUser User
 		{ get { return Contact as IUser; } }
+
+		string status;
+		public string Status
+		{
+			get { return status; }
+			private set
+			{
+				if (status != value)
+				{
+					status = value;
+					NotifyPropertyChanged("Status");
+				}
+			}
+		}
 
 		public UserViewModel(ChatClient client, IUser entity)
 			: base(client, entity)
@@ -21,25 +33,34 @@ namespace Client.UI.ViewModel
 		{
 			base.OnContactChanged(sender, e);
 
-			var oldStatus = status;
-
 			status = User.Status.ToString();
-
-			if (oldStatus != status)
-				NotifyPropertyChanged("Status");
 		}
-
-		public string Status
-		{ get { return status; } }
 	}
 
 	public class GroupViewModel : ContactViewModel
 	{
-		readonly ObservableCollection<UserViewModel> memberModels = new ObservableCollection<UserViewModel>();
-		bool joined;
-
 		public IGroup Group
 		{ get { return Contact as IGroup; } }
+
+		bool joined;
+		public bool Joined
+		{
+			get { return joined; }
+			private set
+			{
+				if (joined != value)
+				{
+					joined = value;
+					NotifyPropertyChanged("Joined");
+				}
+			}
+		}
+
+		readonly ObservableCollection<UserViewModel> memberModels = new ObservableCollection<UserViewModel>();
+		public ReadOnlyObservableCollection<UserViewModel> Members
+		{
+			get { return new ReadOnlyObservableCollection<UserViewModel>(memberModels); }
+		}
 
 		public GroupViewModel(ChatClient client, IGroup entity)
 			: base(client, entity)
@@ -58,44 +79,84 @@ namespace Client.UI.ViewModel
 
 		void OnUserRemoved(object sender, UserEventArgs e)
 		{
-			memberModels.Remove(memberModels.Single(vm => vm.Name == e.User.Name));
+			var member = memberModels.Single(vm => vm.User == e.User);
+			memberModels.Remove(member);
+			member.Dispose();
 		}
 		
 		protected override void OnContactChanged(object sender, EventArgs e)
 		{
 			base.OnContactChanged(sender, e);
 
-			var oldJoined = joined;
-			joined = Group.Joined;
-
-			if (oldJoined != joined)
-				NotifyPropertyChanged("Joined");
+			Joined = Group.Joined;
 		}
 
-		public ReadOnlyObservableCollection<UserViewModel> Members
+		bool disposed = false;
+		protected override void Dispose(bool disposing)
 		{
-			get { return new ReadOnlyObservableCollection<UserViewModel>(memberModels); }
+			base.Dispose(disposing);
+
+			if (disposed)
+				return;
+			disposed = true;
+
+			if (disposing)
+			{
+				Group.UserAdded -= OnUserAdded;
+				Group.UserRemoved -= OnUserRemoved;
+			}
 		}
 	}
 
-	public class ContactViewModel : BaseViewModel
+	public abstract class ContactViewModel : BaseViewModel
 	{
 		protected ChatClient client;
+
 		string name;
-		string displayName;
-		Brush displayBrush;
-
 		public string Name
-		{ get { return name; } }
+		{
+			get { return name; }
+			private set
+			{
+				if (name != value)
+				{
+					name = value;
+					NotifyPropertyChanged("Name");
+				}
+			}
+		}
 
+		string displayName;
 		public string DisplayName
-		{ get { return displayName; } }
+		{
+			get { return displayName; }
+			private set
+			{
+				if (displayName != value)
+				{
+					displayName = value;
+					NotifyPropertyChanged("DisplayName");
+				}
+			}
+		}
 
+		Brush displayBrush;
 		public Brush DisplayBrush
-		{ get { return displayBrush; } }
+		{
+			get { return displayBrush; }
+			private set
+			{
+				if (displayBrush != value)
+				{
+					displayBrush = value;
+					NotifyPropertyChanged("DisplayBrush");
+				}
+			}
+		}
 
+		readonly IContact contact;
 		public IContact Contact
-		{ get; protected set; }
+		{ get { return contact; } }
 
 		public static ContactViewModel Create(ChatClient client, IContact contact)
 		{
@@ -107,34 +168,22 @@ namespace Client.UI.ViewModel
 				throw new NotSupportedException();
 		}
 
-		protected ContactViewModel(ChatClient client, IContact entity)
+		protected ContactViewModel(ChatClient client, IContact contact)
 		{
 			this.client = client;
-			Contact = entity;
+			this.contact = contact;
 			Contact.Changed += OnContactChanged;
 			OnContactChanged(Contact, null);
 		}
 
 		protected virtual void OnContactChanged(object sender, EventArgs e)
 		{
-			var oldName = name;
-			var oldDisplayName = displayName;
-			var oldDisplayBrush = displayBrush;
-
-			name = Contact.Name;
-			displayName = Contact.DisplayName;
-			displayBrush = Contact is IUser ? App.GetUserStatusBrush((Contact as IUser).Status) : Brushes.Gray;
-
-			if (oldName != name)
-				NotifyPropertyChanged("Name");
-			if (oldDisplayName != displayName)
-				NotifyPropertyChanged("DisplayName");
-			if (oldDisplayBrush != displayBrush)
-				NotifyPropertyChanged("DisplayBrush");
+			Name = Contact.Name;
+			DisplayName = Contact.DisplayName;
+			DisplayBrush = Contact is IUser ? App.GetUserStatusBrush((Contact as IUser).Status) : Brushes.Black;
 		}
 
 		bool disposed = false;
-		
 		protected override void Dispose(bool disposing)
 		{
 			base.Dispose(disposing);

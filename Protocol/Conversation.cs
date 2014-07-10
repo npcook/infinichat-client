@@ -16,11 +16,11 @@ namespace Client.Protocol
 		public event EventHandler<UserEventArgs> UserAdded;
 		public event EventHandler<UserEventArgs> UserChanged;
 		public event EventHandler<UserEventArgs> UserRemoved;
-		public event EventHandler<ChatReceivedEventArgs> ChatReceived;
+		public event EventHandler<ChatReceivedEventArgs> NewMessage;
 		public event EventHandler<UserTypingEventArgs> UserTyping;
 		public event EventHandler<EventArgs> Ended;
 
-		public IEnumerable<Participant> Participants
+		public ICollection<Participant> Participants
 		{ get { return participants; } }
 
 		public bool IsGroup
@@ -77,7 +77,7 @@ namespace Client.Protocol
 
 		void OnUserRemoved(object sender, UserEventArgs e)
 		{
-			participants.Remove(GetParticipant(e.User.Name));
+			participants.Remove(GetParticipant(e.User));
 			UserRemoved.SafeInvoke(this, e);
 			if (participants.Count == 0)
 			{
@@ -93,19 +93,23 @@ namespace Client.Protocol
 
 		void OnUserTyping(object sender, UserTypingEventArgs e)
 		{
-			GetParticipant(e.User.Name).IsTyping = e.Starting;
+			GetParticipant(e.User).IsTyping = e.Starting;
 			UserTyping.SafeInvoke(this, e);
 		}
 
 		void OnChatReceived(object sender, ChatReceivedEventArgs e)
 		{
-			chatLog.Add(e.Message);
-			ChatReceived.SafeInvoke(this, e);
+			AddMessage(e.Message);
 		}
 
 		public Participant GetParticipant(string name)
 		{
 			return participants.SingleOrDefault(participant => participant.User.Name == name);
+		}
+
+		public Participant GetParticipant(IUser user)
+		{
+			return participants.SingleOrDefault(participant => participant.User == user);
 		}
 
 		public void SendMessage(string message, FontOptions font)
@@ -120,22 +124,31 @@ namespace Client.Protocol
 			else
 				client.ChatUser(Name, font, message, timestamp, null);
 
-			chatLog.Add(new ChatMessage(client.Me, font, message, timestamp));
+			AddMessage(new ChatMessage(client.Me, font, message, timestamp));
+		}
+
+		void AddMessage(ChatMessage message)
+		{
+			chatLog.Add(message);
+			NewMessage.SafeInvoke(this, new ChatReceivedEventArgs(message));
 		}
 	}
 
 	public class Participant
 	{
-		public IUser User = null;
-		public bool IsTyping = false;
-		public DateTime LastMessage = DateTime.MinValue;
+		readonly IUser user;
+		public IUser User
+		{ get { return user; } }
 
-		public Participant()
-		{ }
+		public bool IsTyping
+		{ get; set; }
+
+		public DateTime LastMessage
+		{ get; set; }
 
 		public Participant(IUser user)
 		{
-			User = user;
+			this.user = user;
 		}
 	}
 

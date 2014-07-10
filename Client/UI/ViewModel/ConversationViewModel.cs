@@ -1,5 +1,6 @@
 ﻿using Client.Protocol;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Timers;
@@ -16,16 +17,30 @@ namespace Client.UI.ViewModel
 		ObservableCollection<UserViewModel> participants = new ObservableCollection<UserViewModel>();
 		ObservableCollection<UserViewModel> typingParticipants = new ObservableCollection<UserViewModel>();
 		IUser lastSender;
-		string currentMessage = "";
 		RelayCommand sendChatCommand;
 		FontOptions font;
-		bool isHighlighted;
 
+		ContactViewModel contact;
 		public ContactViewModel Contact
-		{ get; private set; }
+		{
+			get { return contact; }
+			private set
+			{
+				contact = value;
+				NotifyPropertyChanged("Contact");
+			}
+		}
 
+		Conversation conversation;
 		public Conversation Conversation
-		{ get; private set; }
+		{
+			get { return conversation; }
+			private set
+			{
+				conversation = value;
+				NotifyPropertyChanged("Conversation");
+			}
+		}
 
 		public ReadOnlyObservableCollection<UserViewModel> Participants
 		{ get { return new ReadOnlyObservableCollection<UserViewModel>(participants); } }
@@ -33,9 +48,11 @@ namespace Client.UI.ViewModel
 		public ReadOnlyObservableCollection<UserViewModel> TypingParticipants
 		{ get { return new ReadOnlyObservableCollection<UserViewModel>(typingParticipants); } }
 
-		public FlowDocument ChatHistory
-		{ get; private set; }
+		readonly ObservableCollection<Block> chatHistory = new ObservableCollection<Block>();
+		public ObservableCollection<Block> ChatHistory
+		{ get { return chatHistory; } }
 
+		string currentMessage = "";
 		public string CurrentMessage
 		{
 			get { return currentMessage; }
@@ -70,28 +87,7 @@ namespace Client.UI.ViewModel
 		public Brush TitleBrush
 		{ get { return Brushes.Black; } }
 
-		public string Subtitle
-		{
-			get
-			{
-				if (Conversation.IsGroup)
-					return "";
-				else
-					return (Conversation.Contact as IUser).Status.ToString();
-			}
-		}
-
-		public Brush SubtitleBrush
-		{
-			get
-			{
-				if (Conversation.IsGroup)
-					return Brushes.Transparent;
-				else
-					return App.GetUserStatusBrush((Conversation.Contact as IUser).Status);
-			}
-		}
-
+		bool isHighlighted;
 		public bool IsHighlighted
 		{
 			get { return isHighlighted; }
@@ -114,15 +110,8 @@ namespace Client.UI.ViewModel
 			sendChatCommand = new RelayCommand(_ =>
 				{
 					Conversation.SendMessage(CurrentMessage, App.Current.ClientFont);
-					Conversation_ChatReceived(this, new ChatReceivedEventArgs(new ChatMessage(client.Me, font, CurrentMessage, DateTime.UtcNow)));
 					CurrentMessage = "";
 				}, _ => CurrentMessage.Length > 0);
-
-			ChatHistory = new FlowDocument();
-			ChatHistory.Background = Brushes.White;
-			ChatHistory.PagePadding = new Thickness(4);
-			ChatHistory.FontFamily = new FontFamily("Segoe UI");
-			ChatHistory.FontSize = new FontSizeConverter().ConvertFromString("10pt") as double? ?? 0;
 
 			App.Current.FontChanged += OnFontChanged;
 			OnFontChanged(this, null);
@@ -154,43 +143,46 @@ namespace Client.UI.ViewModel
 					participant.Dispose();
 				participants.Clear();
 
-				Conversation.Contact.Changed -= Contact_Changed;
-				Conversation.UserAdded -= Conversation_UserAdded;
-				Conversation.UserChanged -= Conversation_UserChanged;
-				Conversation.UserRemoved -= Conversation_UserRemoved;
-				Conversation.ChatReceived -= Conversation_ChatReceived;
-				Conversation.UserTyping -= Conversation_UserTyping;
-				Conversation.Ended -= Conversation_Ended;
-
-				Contact = null;
+				Conversation.Contact.Changed -= OnContactChanged;
+				Conversation.UserAdded -= OnUserAdded;
+				Conversation.UserChanged -= OnUserChanged;
+				Conversation.UserRemoved -= OnUserRemoved;
+				Conversation.NewMessage -= OnChatReceived;
+				Conversation.UserTyping -= OnUserTyping;
+				Conversation.Ended -= OnEnded;
 			}
 
 			Conversation = convo;
 
-			if (Conversation != null)
+			var oldContact = Contact;
+			if (convo != null)
 			{
-				Conversation.Contact.Changed += Contact_Changed;
-				Conversation.UserAdded += Conversation_UserAdded;
-				Conversation.UserChanged += Conversation_UserChanged;
-				Conversation.UserRemoved += Conversation_UserRemoved;
-				Conversation.ChatReceived += Conversation_ChatReceived;
-				Conversation.UserTyping += Conversation_UserTyping;
-				Conversation.Ended += Conversation_Ended;
+				convo.Contact.Changed += OnContactChanged;
+				convo.UserAdded += OnUserAdded;
+				convo.UserChanged += OnUserChanged;
+				convo.UserRemoved += OnUserRemoved;
+				convo.NewMessage += OnChatReceived;
+				convo.UserTyping += OnUserTyping;
+				convo.Ended += OnEnded;
 
-				foreach (var participant in Conversation.Participants)
+				foreach (var participant in convo.Participants)
 					participants.Add(new UserViewModel(client, participant.User));
 
-				Contact = ContactViewModel.Create(client, Conversation.Contact);
+				Contact = ContactViewModel.Create(client, convo.Contact);
 			}
-			NotifyPropertyChanged("Contact");
+			else
+				Contact = null;
+
+			if (oldContact != null)
+				oldContact.Dispose();
 		}
 
-		void Conversation_UserChanged(object sender, UserEventArgs e)
+		void OnUserChanged(object sender, UserEventArgs e)
 		{
 //			throw new NotImplementedException();
 		}
 
-		void Contact_Changed(object sender, EventArgs e)
+		void OnContactChanged(object sender, EventArgs e)
 		{
 			NotifyPropertyChanged("Title");
 			NotifyPropertyChanged("TitleBrush");
@@ -198,12 +190,12 @@ namespace Client.UI.ViewModel
 			NotifyPropertyChanged("SubtitleBrush");
 		}
 
-		void Conversation_Ended(object sender, EventArgs e)
+		void OnEnded(object sender, EventArgs e)
 		{
 			throw new NotImplementedException();
 		}
 
-		void Conversation_UserTyping(object sender, UserTypingEventArgs e)
+		void OnUserTyping(object sender, UserTypingEventArgs e)
 		{
 			var participant = participants.Single(vm => vm.Contact == e.User);
 			if (e.Starting)
@@ -212,10 +204,27 @@ namespace Client.UI.ViewModel
 				typingParticipants.Remove(participant);
 		}
 
-		void Conversation_ChatReceived(object _sender, ChatReceivedEventArgs e)
+		enum StopType
+		{
+			Url,
+			Formatting,
+			Emoticon,
+		}
+
+		struct ChatStop
+		{
+			public int Index;
+			public int Length;
+			public StopType Type;
+			public object Data;
+		}
+
+		void OnChatReceived(object _sender, ChatReceivedEventArgs e)
 		{
 			App.Current.Dispatcher.BeginInvoke(new Action(() =>
 			{
+				const int FontSize = 14;
+
 				var message = e.Message.Text;
 				var font = e.Message.Font;
 				var sender = e.Message.Sender;
@@ -229,8 +238,8 @@ namespace Client.UI.ViewModel
 					lastSender = sender;
 					paragraph = new Paragraph()
 					{
+						FontSize = FontSize + 2,
 						Foreground = Brushes.Black,
-						FontSize = ChatHistory.FontSize + 2,
 						FontWeight = FontWeights.Light,
 						Margin = new Thickness(0, 4.0, 0, 2.0),
 						Padding = new Thickness(0, 0, 0, 2.0),
@@ -238,14 +247,15 @@ namespace Client.UI.ViewModel
 						BorderThickness = new Thickness(0, 0, 0, 1),
 					};
 					paragraph.Inlines.Add(new Run(sender.DisplayName));
-					ChatHistory.Blocks.Add(paragraph);
+					ChatHistory.Add(paragraph);
 				}
 
 				paragraph = new Paragraph()
 				{
 					FontFamily = new FontFamily(font.Family),
+					FontSize = FontSize,
+					LineHeight = 3 * FontSize / 2,
 					Foreground = brush,
-					LineHeight = 3 * ChatHistory.FontSize / 2,
 					Margin = new Thickness(16.0, 0, 0, 0),
 					TextIndent = 0,
 				};
@@ -262,20 +272,73 @@ namespace Client.UI.ViewModel
 
 				paragraph.Inlines.Add(new InlineUIContainer(path));*/
 
-				var indexList = App.Current.SearchForEmoticons(message);
+				var stops = new List<ChatStop>();
+
+				foreach (var emoteStop in App.EmoticonManager.SearchForEmoticons(message))
+				{
+					stops.Add(new ChatStop()
+						{
+							Index = emoteStop.Key,
+							Length = emoteStop.Value.Shortcut.Length,
+							Type = StopType.Emoticon,
+							Data = emoteStop.Value,
+						});
+				}
+
+				string[] urls = new string[] {"http://", "https://"};
+				foreach (var url in urls)
+				{
+					int index = message.IndexOf(url);
+					while (index != -1)
+					{
+						int endIndex = message.IndexOf(' ', index);
+						if (endIndex == -1)
+							endIndex = message.Length - 1;
+						stops.Add(new ChatStop()
+							{
+								Index = index,
+								Length = endIndex - index + 1,
+								Type = StopType.Url,
+							});
+
+						index = message.IndexOf(url, endIndex);
+					}
+				}
+
+				var orderedStops = stops.OrderBy(_ => _.Index);
 
 				int startIndex = 0;
-				for (int i = 0; i < indexList.Count; ++i)
+				foreach (var stop in orderedStops)
 				{
-					paragraph.Inlines.Add(new Run(message.Substring(startIndex, indexList[i].Key - startIndex)));
+					if (stop.Index < startIndex)
+						continue;
+					if (stop.Index != startIndex)
+						paragraph.Inlines.Add(new Run(message.Substring(startIndex, stop.Index - startIndex)));
 
-					var picture = new EmoteImage();
-					picture.Emote = indexList[i].Value;
+					switch (stop.Type)
+					{
+						case StopType.Emoticon:
+							var picture = new EmoteImage()
+							{
+								SnapsToDevicePixels = true,
+								Emote = stop.Data as Emoticon,
+							};
 
-					paragraph.Inlines.Add(new InlineUIContainer(picture));
+							paragraph.Inlines.Add(new InlineUIContainer(picture));
+							break;
 
-					startIndex = indexList[i].Key + indexList[i].Value.Shortcut.Length;
+						case StopType.Url:
+							var text = message.Substring(stop.Index, stop.Length);
+							var link = new Hyperlink(new Run(text));
+							link.Tag = text;
+							link.Click += OnChatLinkClicked;
+							paragraph.Inlines.Add(link);
+							break;
+					}
+
+					startIndex = stop.Index + stop.Length;
 				}
+
 				paragraph.Inlines.Add(new Run(message.Substring(startIndex)));
 
 				if (font.Style.HasFlag(Protocol.FontStyle.Bold))
@@ -288,11 +351,16 @@ namespace Client.UI.ViewModel
 					paragraph.TextDecorations.Add(System.Windows.TextDecorations.Underline);
 				}
 
-				ChatHistory.Blocks.Add(paragraph);
+				ChatHistory.Add(paragraph);
 			}));
 		}
 
-		void Conversation_UserRemoved(object sender, UserEventArgs e)
+		private void OnChatLinkClicked(object sender, RoutedEventArgs e)
+		{
+			System.Diagnostics.Process.Start((sender as Hyperlink).Tag as string);
+		}
+
+		void OnUserRemoved(object sender, UserEventArgs e)
 		{
 			var participant = participants.Single(vm => vm.Contact == e.User);
 			participants.Remove(participants.Single(vm => vm.Contact == e.User));
@@ -300,7 +368,7 @@ namespace Client.UI.ViewModel
 			participant.Dispose();
 		}
 
-		void Conversation_UserAdded(object sender, UserEventArgs e)
+		void OnUserAdded(object sender, UserEventArgs e)
 		{
 			participants.Add(new UserViewModel(client, e.User));
 		}

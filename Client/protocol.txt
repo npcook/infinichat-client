@@ -1,6 +1,6 @@
 ﻿[RESULT] - Result Codes
 ----------------
-Good shit:
+Good stuff:
 200 - OK
 201 - Created
 202 - Accepted
@@ -80,7 +80,7 @@ Parameters:
 Example:
 {
 	"message": "logout",
-	"reason": "Fuck this server"
+	"reason": "User"
 }
 
 chat.user - Chat to a user

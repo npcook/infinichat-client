@@ -62,6 +62,12 @@
 					</DataTrigger>
 				</Style.Triggers>
 			</Style>
+			<DataTemplate x:Key="ContactListTemplate" DataType="{x:Type ViewModel:ContactViewModel}">
+				<StackPanel Orientation="Horizontal">
+					<Rectangle Fill="{Binding DisplayBrush}" Width="{Binding ElementName=NameText, Path=FontSize}" Height="{Binding ElementName=NameText, Path=FontSize}" Margin="0,0,5,0" Stroke="White"/>
+					<TextBlock x:Name="NameText" Text="{Binding DisplayName}" FontSize="14" VerticalAlignment="Center"/>
+				</StackPanel>
+			</DataTemplate>
 			<DataTemplate x:Key="UserPanelTemplate" DataType="{x:Type ViewModel:UserViewModel}">
 				<StackPanel Orientation="Vertical">
 					<Viewbox Stretch="Uniform" StretchDirection="DownOnly" MinHeight="30">
@@ -75,16 +81,7 @@
 					<Viewbox Stretch="Uniform" StretchDirection="DownOnly" MinHeight="30">
 						<TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" FontSize="29" FontWeight="Light" HorizontalAlignment="Center" VerticalAlignment="Top"/>
 					</Viewbox>
-					<ItemsControl Background="Transparent" ItemsSource="{Binding Members}">
-						<ItemsControl.ItemTemplate>
-							<DataTemplate DataType="{x:Type ViewModel:UserViewModel}">
-								<StackPanel Orientation="Horizontal" Margin="2">
-									<Rectangle Fill="{Binding DisplayBrush}" Width="{Binding ElementName=NameText, Path=FontSize}" Height="{Binding ElementName=NameText, Path=FontSize}" Margin="0,0,5,0" Stroke="White"/>
-									<TextBlock x:Name="NameText" Text="{Binding DisplayName}" FontSize="14" VerticalAlignment="Center"/>
-								</StackPanel>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
+					<ItemsControl Background="Transparent" ItemsSource="{Binding Members}" ItemTemplate="{StaticResource ContactListTemplate}"/>
 				</StackPanel>
 			</DataTemplate>
 		</ResourceDictionary>
